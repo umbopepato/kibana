@@ -26,7 +26,7 @@ import type {
   EuiSuperSelectOption,
   EuiDataGridOnColumnResizeHandler,
 } from '@elastic/eui';
-import type { AlertConsumers, STACK_ALERTS_FEATURE_ID } from '@kbn/rule-data-utils';
+import type { AlertConsumers, STACK_ALERTS_FEATURE_ID, ValidFeatureId } from '@kbn/rule-data-utils';
 import { EuiDataGridColumn, EuiDataGridControlColumn, EuiDataGridSorting } from '@elastic/eui';
 import { HttpSetup } from '@kbn/core/public';
 import { KueryNode } from '@kbn/es-query';
@@ -62,6 +62,7 @@ import { RuleRegistrySearchRequestPagination } from '@kbn/rule-registry-plugin/c
 import { EcsFieldsResponse } from '@kbn/rule-registry-plugin/common/search_strategy';
 import {
   QueryDslQueryContainer,
+  SearchHit,
   SortCombinations,
 } from '@elastic/elasticsearch/lib/api/typesWithBodyKey';
 import React from 'react';
@@ -498,7 +499,7 @@ export interface InspectQuery {
 }
 export type GetInspectQuery = () => InspectQuery;
 
-export type Alert = EcsFieldsResponse;
+export type Alert = SearchHit<EcsFieldsResponse>;
 export type Alerts = Alert[];
 
 export interface FetchAlertData {
@@ -558,6 +559,7 @@ export type AlertsTableProps = {
   query: Pick<QueryDslQueryContainer, 'bool' | 'ids'>;
   controls?: EuiDataGridToolBarAdditionalControlsOptions;
   showInspectButton?: boolean;
+  featureIds: ValidFeatureId[];
   toolbarVisibility?: EuiDataGridToolBarVisibilityOptions;
   /**
    * Allows to consumers of the table to decide to highlight a row based on the current alert.

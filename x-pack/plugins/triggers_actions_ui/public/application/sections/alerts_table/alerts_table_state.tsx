@@ -24,12 +24,13 @@ import type {
   RuleRegistrySearchRequestPagination,
 } from '@kbn/rule-registry-plugin/common';
 import { Storage } from '@kbn/kibana-utils-plugin/public';
-import { useKibana } from '@kbn/kibana-react-plugin/public';
+import { KibanaContextProvider, useKibana } from '@kbn/kibana-react-plugin/public';
 import type {
   QueryDslQueryContainer,
   SortCombinations,
 } from '@elastic/elasticsearch/lib/api/typesWithBodyKey';
 import { QueryClientProvider } from '@tanstack/react-query';
+import { PluginsStart } from '../../../plugin';
 import { useFetchAlerts } from './hooks/use_fetch_alerts';
 import { AlertsTable } from './alerts_table';
 import { BulkActionsContext } from './bulk_actions/context';
@@ -77,6 +78,7 @@ export type AlertsTableStateProps = {
    * Allows to consumers of the table to decide to highlight a row based on the current alert.
    */
   shouldHighlightRow?: (alert: Alert) => boolean;
+  services: Pick<PluginsStart, 'expressions' | 'fieldFormats' | 'dataViewFieldEditor'>;
 } & Partial<EuiDataGridProps>;
 
 export interface AlertsTableStorage {
@@ -137,9 +139,11 @@ const isMaintenanceWindowColumnEnabled = (columns: EuiDataGridColumn[]): boolean
 
 const AlertsTableState = (props: AlertsTableStateProps) => {
   return (
-    <QueryClientProvider client={alertsTableQueryClient}>
-      <AlertsTableStateWithQueryProvider {...props} />
-    </QueryClientProvider>
+    <KibanaContextProvider services={props.services}>
+      <QueryClientProvider client={alertsTableQueryClient}>
+        <AlertsTableStateWithQueryProvider {...props} />
+      </QueryClientProvider>
+    </KibanaContextProvider>
   );
 };
 
@@ -379,6 +383,7 @@ const AlertsTableStateWithQueryProvider = ({
       deletedEventIds: [],
       disabledCellActions: [],
       flyoutSize,
+      featureIds,
       pageSize: pagination.pageSize,
       pageSizeOptions: [10, 20, 50, 100],
       id,
@@ -410,6 +415,7 @@ const AlertsTableStateWithQueryProvider = ({
       memoizedMaintenanceWindows,
       columns,
       flyoutSize,
+      featureIds,
       pagination.pageSize,
       id,
       leadingControlColumns,

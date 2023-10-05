@@ -24,7 +24,7 @@ import type {
   QueryDslQueryContainer,
   SortCombinations,
 } from '@elastic/elasticsearch/lib/api/typesWithBodyKey';
-import type { Alert, Alerts, GetInspectQuery, InspectQuery } from '../../../../types';
+import type { Alerts, GetInspectQuery, InspectQuery } from '../../../../types';
 import { useKibana } from '../../../../common/lib/kibana';
 import { DefaultSort } from './constants';
 
@@ -218,16 +218,7 @@ const useFetchAlerts = ({
                   } else if (rawResponse.hits.total && typeof rawResponse.hits.total === 'object') {
                     totalAlerts = rawResponse.hits.total?.value ?? 0;
                   }
-                  const alerts = rawResponse.hits.hits.reduce<Alerts>((acc, hit) => {
-                    if (hit.fields) {
-                      acc.push({
-                        ...hit.fields,
-                        _id: hit._id,
-                        _index: hit._index,
-                      } as Alert);
-                    }
-                    return acc;
-                  }, []);
+                  const alerts = rawResponse.hits.hits.filter((h) => h.fields);
 
                   const { oldAlertsData, ecsAlertsData } = alerts.reduce<{
                     oldAlertsData: Array<Array<{ field: string; value: string[] }>>;

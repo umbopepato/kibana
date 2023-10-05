@@ -6,9 +6,9 @@
  */
 
 import { ALERT_UUID } from '@kbn/rule-data-utils';
+import { DataView, DataViewFieldMap } from '@kbn/data-views-plugin/common';
 import React, { useState, Suspense, lazy, useCallback, useMemo, useEffect, useRef } from 'react';
 import {
-  EuiDataGrid,
   EuiDataGridCellValueElementProps,
   EuiFlexGroup,
   EuiFlexItem,
@@ -18,8 +18,12 @@ import {
   EuiSkeletonText,
   EuiDataGridRefProps,
 } from '@elastic/eui';
+import { Storage } from '@kbn/kibana-utils-plugin/public';
 import { useQueryClient } from '@tanstack/react-query';
-import { useSorting, usePagination, useBulkActions, useActionsColumn } from './hooks';
+import { UnifiedDataTable } from '@kbn/unified-data-table';
+import { CellActionsProvider } from '@kbn/cell-actions';
+import { useAlertDataView } from '../../hooks/use_alert_data_view';
+import { usePagination, useBulkActions, useActionsColumn } from './hooks';
 import { AlertsTableProps, FetchAlertData } from '../../../types';
 import {
   ALERTS_TABLE_CONTROL_COLUMNS_ACTIONS_LABEL,
@@ -32,6 +36,7 @@ import { InspectButtonContainer } from './toolbar/components/inspect';
 import { SystemCellId } from './types';
 import { SystemCellFactory, systemCells } from './cells';
 import { triggersActionsUiQueriesKeys } from '../../hooks/constants';
+import { useKibana } from '../../../common/lib/kibana';
 
 const AlertsFlyout = lazy(() => import('./alerts_flyout'));
 const DefaultGridStyle: EuiDataGridStyle = {
@@ -65,7 +70,18 @@ const isSystemCell = (columnId: string): columnId is SystemCellId => {
   return systemCells.includes(columnId as SystemCellId);
 };
 
+const storage = new Storage(localStorage);
+
 const AlertsTable: React.FunctionComponent<AlertsTableProps> = (props: AlertsTableProps) => {
+  const {
+    uiSettings,
+    data,
+    fieldFormats,
+    theme: themeService,
+    dataViewFieldEditor,
+    notifications: { toasts: toastNotifications },
+  } = useKibana().services;
+
   const dataGridRef = useRef<EuiDataGridRefProps>(null);
   const [activeRowClasses, setActiveRowClasses] = useState<
     NonNullable<EuiDataGridStyle['rowClasses']>
@@ -89,7 +105,7 @@ const AlertsTable: React.FunctionComponent<AlertsTableProps> = (props: AlertsTab
   const { data: maintenanceWindows, isLoading: isLoadingMaintenanceWindows } =
     props.maintenanceWindows;
 
-  const { sortingColumns, onSort } = useSorting(onSortChange, sortingFields);
+  // const { sortingColumns, onSort } = useSorting(onSortChange, sortingFields);
 
   const { renderCustomActionsRow, actionsColumnWidth, getSetIsActionLoadingCallback } =
     useActionsColumn({
@@ -355,9 +371,9 @@ const AlertsTable: React.FunctionComponent<AlertsTableProps> = (props: AlertsTab
       // ecsAlert is needed for security solution
       const ecsAlert = ecsAlertsData[idx];
       if (alert) {
-        const data: Array<{ field: string; value: string[] }> = [];
+        const _data: Array<{ field: string; value: string[] }> = [];
         Object.entries(alert ?? {}).forEach(([key, value]) => {
-          data.push({ field: key, value: value as string[] });
+          _data.push({ field: key, value: value as string[] });
         });
 
         if (isSystemCell(_props.columnId)) {
@@ -375,7 +391,7 @@ const AlertsTable: React.FunctionComponent<AlertsTableProps> = (props: AlertsTab
 
         return renderCellValue({
           ..._props,
-          data,
+          data: _data,
           ecsData: ecsAlert,
         });
       } else if (isLoading) {
@@ -465,49 +481,88 @@ const AlertsTable: React.FunctionComponent<AlertsTableProps> = (props: AlertsTab
     return mergedGridStyle;
   }, [activeRowClasses, highlightedRowClasses, props.gridStyle]);
 
+  const { value: dataView, loading, error } = useAlertDataView(props.featureIds);
+
   return (
-    <InspectButtonContainer>
-      <section style={{ width: '100%' }} data-test-subj={props['data-test-subj']}>
-        <Suspense fallback={null}>
-          {flyoutAlertIndex > -1 && (
-            <AlertsFlyout
-              alert={alerts[flyoutAlertIndex]}
-              alertsCount={alertsCount}
-              onClose={handleFlyoutClose}
-              alertsTableConfiguration={props.alertsTableConfiguration}
-              flyoutIndex={flyoutAlertIndex + pagination.pageIndex * pagination.pageSize}
-              onPaginate={onPaginateFlyout}
-              isLoading={isLoading}
-              id={props.id}
+    <CellActionsProvider>
+      <InspectButtonContainer>
+        <section style={{ width: '100%' }} data-test-subj={props['data-test-subj']}>
+          <Suspense fallback={null}>
+            {flyoutAlertIndex > -1 && (
+              <AlertsFlyout
+                alert={alerts[flyoutAlertIndex]}
+                alertsCount={alertsCount}
+                onClose={handleFlyoutClose}
+                alertsTableConfiguration={props.alertsTableConfiguration}
+                flyoutIndex={flyoutAlertIndex + pagination.pageIndex * pagination.pageSize}
+                onPaginate={onPaginateFlyout}
+                isLoading={isLoading}
+                id={props.id}
+              />
+            )}
+          </Suspense>
+          {alertsCount > 0 && dataView?.length && (
+            <UnifiedDataTable
+              aria-label="Alerts table"
+              data-test-subj="alertsTable"
+              columns={columnsWithCellActions.map(({ id }) => id)}
+              rows={alerts?.map((a) => {
+                const _source = Object.fromEntries(
+                  Object.entries(a.fields).map(([k, v]) => [k, v[0]])
+                );
+                return {
+                  id: a._id,
+                  raw: {
+                    ...a,
+                    _source,
+                  },
+                  flattened: _source,
+                };
+              })}
+              trailingControlColumns={props.trailingControlColumns}
+              sort={[]}
+              services={{
+                theme: themeService,
+                fieldFormats,
+                uiSettings,
+                dataViewFieldEditor,
+                toastNotifications,
+                storage,
+                data,
+              }}
+              dataView={
+                new DataView({
+                  spec: {
+                    ...dataView[0],
+                    fields: dataView[0].fields.reduce((acc, val) => {
+                      acc[val.name] = val;
+                      return acc;
+                    }, {} as DataViewFieldMap),
+                  },
+                  fieldFormats,
+                })
+              }
+
+              // columnVisibility={{ visibleColumns, setVisibleColumns: onChangeVisibleColumns }}
+              // leadingControlColumns={leadingControlColumns}
+              // rowCount={alertsCount}
+              // renderCellValue={handleRenderCellValue}
+              // gridStyle={actualGridStyle}
+              // sorting={{ columns: sortingColumns, onSort }}
+              // toolbarVisibility={toolbarVisibility}
+              // pagination={{
+              //   ...pagination,
+              //   pageSizeOptions: props.pageSizeOptions,
+              //   onChangeItemsPerPage: onChangePageSize,
+              //   onChangePage: onChangePageIndex,
+              // }}
+              // rowHeightsOptions={props.rowHeightsOptions}
+              // onColumnResize={onColumnResize}
             />
           )}
-        </Suspense>
-        {alertsCount > 0 && (
-          <EuiDataGrid
-            aria-label="Alerts table"
-            data-test-subj="alertsTable"
-            columns={columnsWithCellActions}
-            columnVisibility={{ visibleColumns, setVisibleColumns: onChangeVisibleColumns }}
-            trailingControlColumns={props.trailingControlColumns}
-            leadingControlColumns={leadingControlColumns}
-            rowCount={alertsCount}
-            renderCellValue={handleRenderCellValue}
-            gridStyle={actualGridStyle}
-            sorting={{ columns: sortingColumns, onSort }}
-            toolbarVisibility={toolbarVisibility}
-            pagination={{
-              ...pagination,
-              pageSizeOptions: props.pageSizeOptions,
-              onChangeItemsPerPage: onChangePageSize,
-              onChangePage: onChangePageIndex,
-            }}
-            rowHeightsOptions={props.rowHeightsOptions}
-            onColumnResize={onColumnResize}
-            ref={dataGridRef}
-          />
-        )}
-      </section>
-    </InspectButtonContainer>
+        </section>
+      </InspectButtonContainer>
+    </CellActionsProvider>
   );
 };
 

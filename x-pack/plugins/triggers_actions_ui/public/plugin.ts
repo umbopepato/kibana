@@ -27,6 +27,8 @@ import { triggersActionsRoute } from '@kbn/rule-data-utils';
 import { DashboardStart } from '@kbn/dashboard-plugin/public';
 import type { LicensingPluginStart } from '@kbn/licensing-plugin/public';
 import { ExpressionsStart } from '@kbn/expressions-plugin/public';
+import { FieldFormatsStart } from '@kbn/field-formats-plugin/public/plugin';
+import { DataViewFieldEditorStart } from '@kbn/data-view-field-editor-plugin/public';
 import type { AlertsSearchBarProps } from './application/sections/alerts_search_bar';
 import { TypeRegistry } from './application/type_registry';
 
@@ -152,7 +154,7 @@ interface PluginsSetup {
   actions: ActionsPublicPluginSetup;
 }
 
-interface PluginsStart {
+export interface PluginsStart {
   data: DataPublicPluginStart;
   dataViews: DataViewsPublicPluginStart;
   dataViewEditor: DataViewEditorStart;
@@ -165,6 +167,8 @@ interface PluginsStart {
   expressions: ExpressionsStart;
   unifiedSearch: UnifiedSearchPublicPluginStart;
   licensing: LicensingPluginStart;
+  fieldFormats: FieldFormatsStart;
+  dataViewFieldEditor: DataViewFieldEditorStart;
 }
 
 export class Plugin
@@ -290,6 +294,8 @@ export class Plugin
           kibanaFeatures,
           licensing: pluginsStart.licensing,
           expressions: pluginsStart.expressions,
+          fieldFormats: pluginsStart.fieldFormats,
+          dataViewFieldEditor: pluginsStart.dataViewFieldEditor,
         });
       },
     });
@@ -355,7 +361,7 @@ export class Plugin
     };
   }
 
-  public start(): TriggersAndActionsUIPublicPluginStart {
+  public start(_: CoreStart, plugins: PluginsStart): TriggersAndActionsUIPublicPluginStart {
     return {
       actionTypeRegistry: this.actionTypeRegistry,
       ruleTypeRegistry: this.ruleTypeRegistry,
@@ -400,7 +406,11 @@ export class Plugin
         });
       },
       getAlertsStateTable: (props: AlertsTableStateProps & LazyLoadProps) => {
-        return getAlertsTableStateLazy(props);
+        const { expressions, fieldFormats, dataViewFieldEditor } = plugins;
+        return getAlertsTableStateLazy({
+          ...props,
+          services: { expressions, fieldFormats, dataViewFieldEditor },
+        });
       },
       getAlertsSearchBar: (props: AlertsSearchBarProps) => {
         return getAlertsSearchBarLazy(props);

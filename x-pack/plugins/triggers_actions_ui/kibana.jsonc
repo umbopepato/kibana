@@ -24,7 +24,9 @@
       "actions",
       "dashboard",
       "licensing",
-      "expressions"
+      "expressions",
+      "fieldFormats",
+      "dataViewFieldEditor"
     ],
     "optionalPlugins": [
       "cloud",
