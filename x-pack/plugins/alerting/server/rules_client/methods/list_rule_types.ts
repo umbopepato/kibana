@@ -9,8 +9,9 @@ import { WriteOperations, ReadOperations, AlertingAuthorizationEntity } from '..
 import { RulesClientContext } from '../types';
 
 export async function listRuleTypes(context: RulesClientContext) {
+  const rules = context.ruleTypeRegistry.list();
   return await context.authorization.filterByRuleTypeAuthorization(
-    context.ruleTypeRegistry.list(),
+    rules,
     [ReadOperations.Get, WriteOperations.Create],
     AlertingAuthorizationEntity.Rule
   );
