@@ -10,7 +10,7 @@ import { KibanaFeatureConfig } from '@kbn/features-plugin/common';
 import { DEFAULT_APP_CATEGORIES } from '@kbn/core/server';
 import { TRANSFORM_RULE_TYPE } from '@kbn/transform-plugin/common';
 import { STACK_ALERTS_FEATURE_ID } from '@kbn/rule-data-utils';
-import { ES_QUERY_ID as ElasticsearchQuery } from '@kbn/rule-data-utils';
+import { ES_QUERY_ID as ElasticsearchQuery, LAMBDA_ID as LambdaQuery } from '@kbn/rule-data-utils';
 import { ID as IndexThreshold } from './rule_types/index_threshold/rule_type';
 import { GEO_CONTAINMENT_ID as GeoContainment } from './rule_types/geo_containment';
 
@@ -26,7 +26,7 @@ export const BUILT_IN_ALERTS_FEATURE: KibanaFeatureConfig = {
   management: {
     insightsAndAlerting: ['triggersActions'],
   },
-  alerting: [IndexThreshold, GeoContainment, ElasticsearchQuery, TransformHealth],
+  alerting: [IndexThreshold, GeoContainment, ElasticsearchQuery, TransformHealth, LambdaQuery],
   privileges: {
     all: {
       app: [],
@@ -36,10 +36,10 @@ export const BUILT_IN_ALERTS_FEATURE: KibanaFeatureConfig = {
       },
       alerting: {
         rule: {
-          all: [IndexThreshold, GeoContainment, ElasticsearchQuery, TransformHealth],
+          all: [IndexThreshold, GeoContainment, ElasticsearchQuery, TransformHealth, LambdaQuery],
         },
         alert: {
-          all: [IndexThreshold, GeoContainment, ElasticsearchQuery, TransformHealth],
+          all: [IndexThreshold, GeoContainment, ElasticsearchQuery, TransformHealth, LambdaQuery],
         },
       },
       savedObject: {
@@ -57,10 +57,10 @@ export const BUILT_IN_ALERTS_FEATURE: KibanaFeatureConfig = {
       },
       alerting: {
         rule: {
-          read: [IndexThreshold, GeoContainment, ElasticsearchQuery, TransformHealth],
+          read: [IndexThreshold, GeoContainment, ElasticsearchQuery, TransformHealth, LambdaQuery],
         },
         alert: {
-          read: [IndexThreshold, GeoContainment, ElasticsearchQuery, TransformHealth],
+          read: [IndexThreshold, GeoContainment, ElasticsearchQuery, TransformHealth, LambdaQuery],
         },
       },
       savedObject: {

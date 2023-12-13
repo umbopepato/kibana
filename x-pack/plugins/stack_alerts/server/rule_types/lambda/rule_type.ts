@@ -7,14 +7,13 @@
 
 import { i18n } from '@kbn/i18n';
 import { DEFAULT_APP_CATEGORIES } from '@kbn/core/server';
-import { STACK_ALERTS_FEATURE_ID } from '@kbn/rule-data-utils';
+import { LAMBDA_ID, STACK_ALERTS_FEATURE_ID } from '@kbn/rule-data-utils';
 import { STACK_ALERTS_AAD_CONFIG } from '..';
 import { ActionContext } from './action_context';
 import { Params, ParamsSchema } from './rule_type_params';
 import { RuleType, RuleExecutorOptions, StackAlertsStartDeps } from '../../types';
 import { StackAlertType } from '../types';
 
-export const ID = '.lambda';
 export const ActionGroupId = 'lambda';
 
 export function getRuleType(
@@ -155,7 +154,7 @@ export function getRuleType(
   );
 
   return {
-    id: ID,
+    id: LAMBDA_ID,
     name: ruleTypeName,
     actionGroups: [{ id: ActionGroupId, name: actionGroupName }],
     defaultActionGroupId: ActionGroupId,
