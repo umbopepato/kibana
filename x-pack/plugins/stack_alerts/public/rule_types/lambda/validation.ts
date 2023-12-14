@@ -11,14 +11,16 @@ import { isUrl } from '@kbn/es-ui-shared-plugin/static/validators/string';
 import { LambdaAuthType } from './constants';
 import { LambdaRuleParams } from './types';
 
-const REQUIRED_FIELDS = ['method', 'url'] as Array<keyof LambdaRuleParams>;
+const REQUIRED_FIELDS = ['method', 'url', 'additionalLookBackTime'] as Array<
+  keyof LambdaRuleParams
+>;
 const REQUIRED_BASIC_AUTH_FIELDS = ['username', 'password'] as Array<keyof LambdaRuleParams>;
 const REQUIRED_FIELD_MESSAGE = i18n.translate('xpack.stackAlerts.lambda.ui.requiredField', {
   defaultMessage: 'This field is required.',
 });
 
 export const validateExpression = (ruleParams: LambdaRuleParams): ValidationResult => {
-  const { url, authType } = ruleParams;
+  const { url, authType, additionalLookBackTime } = ruleParams;
   const validationResult = { errors: {} };
   const errors: Record<keyof LambdaRuleParams, string[]> = {
     method: new Array<string>(),
@@ -26,6 +28,7 @@ export const validateExpression = (ruleParams: LambdaRuleParams): ValidationResu
     authType: new Array<string>(),
     username: new Array<string>(),
     password: new Array<string>(),
+    additionalLookBackTime: new Array<string>(),
   };
   validationResult.errors = errors;
 
@@ -49,6 +52,28 @@ export const validateExpression = (ruleParams: LambdaRuleParams): ValidationResu
         defaultMessage: 'This is not a valid url.',
       })
     );
+  }
+
+  if (additionalLookBackTime.length > 1) {
+    const unit = additionalLookBackTime.at(-1);
+    if (!['s', 'm', 'h', 'M'].includes(unit!)) {
+      errors.additionalLookBackTime.push(
+        i18n.translate('xpack.stackAlerts.lambda.ui.invalidTimeUnit', {
+          defaultMessage: 'Invalid time unit.',
+        })
+      );
+    }
+    const time = parseInt(
+      additionalLookBackTime.substring(0, additionalLookBackTime.length - 1),
+      10
+    );
+    if (isNaN(time) || time < 1) {
+      errors.additionalLookBackTime.push(
+        i18n.translate('xpack.stackAlerts.lambda.ui.invalidTime', {
+          defaultMessage: 'Invalid time.',
+        })
+      );
+    }
   }
 
   return validationResult;

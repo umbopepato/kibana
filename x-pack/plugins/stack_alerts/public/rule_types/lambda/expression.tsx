@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import React, { Fragment, useEffect } from 'react';
+import React, { Fragment, useEffect, useState } from 'react';
 import { RuleTypeParamsExpressionProps } from '@kbn/triggers-actions-ui-plugin/public';
 import './expression.scss';
 import {
@@ -17,10 +17,12 @@ import {
   EuiSpacer,
   EuiCheckableCard,
   EuiFieldPassword,
+  EuiFieldNumber,
 } from '@elastic/eui';
+import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
-import { LambdaRuleParams } from './types';
-import * as i18n from './translations';
+import { LambdaRuleParams, TimeUnit, TimeWithUnit } from './types';
+import * as translations from './translations';
 import { LambdaAuthType } from './constants';
 
 const HTTP_VERBS = ['post', 'put'];
@@ -28,7 +30,17 @@ const HTTP_VERBS = ['post', 'put'];
 export const LambdaRuleTypeExpression: React.FunctionComponent<
   Omit<RuleTypeParamsExpressionProps<LambdaRuleParams>, 'unifiedSearch'>
 > = ({ ruleParams, setRuleParams, setRuleProperty, errors }) => {
-  const { method, url, authType, username, password } = ruleParams;
+  const { method, url, authType, username, password, additionalLookBackTime } = ruleParams;
+  const initialLookBackTime =
+    additionalLookBackTime?.length > 1
+      ? Number(additionalLookBackTime?.substring(0, additionalLookBackTime.length - 1))
+      : null;
+  const [lookBackTime, setLookBackTime] = useState(
+    initialLookBackTime && !isNaN(initialLookBackTime) ? initialLookBackTime : 1
+  );
+  const [lookBackUnit, setLookBackUnit] = useState<TimeUnit>(
+    (additionalLookBackTime?.at(-1) as TimeUnit) ?? 'm'
+  );
 
   useEffect(() => {
     setRuleProperty('params', {
@@ -37,9 +49,17 @@ export const LambdaRuleTypeExpression: React.FunctionComponent<
       authType: ruleParams.authType ?? LambdaAuthType.None,
       username: ruleParams.username ?? '',
       password: ruleParams.password ?? '',
+      additionalLookBackTime: ruleParams.additionalLookBackTime ?? '1m',
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    setRuleParams(
+      'additionalLookBackTime',
+      [lookBackTime ?? 1, lookBackUnit ?? 'm'].join('') as TimeWithUnit
+    );
+  }, [lookBackTime, lookBackUnit, setRuleParams]);
 
   const basicAuthFields = (
     <EuiFlexGroup justifyContent="spaceBetween">
@@ -88,7 +108,7 @@ export const LambdaRuleTypeExpression: React.FunctionComponent<
     <>
       <EuiFlexGroup justifyContent="spaceBetween">
         <EuiFlexItem grow={false}>
-          <EuiFormRow label={i18n.METHOD_LABEL}>
+          <EuiFormRow label={translations.METHOD_LABEL}>
             <EuiSelect
               value={method}
               defaultValue="post"
@@ -101,7 +121,7 @@ export const LambdaRuleTypeExpression: React.FunctionComponent<
         </EuiFlexItem>
         <EuiFlexItem>
           <EuiFormRow
-            label={i18n.URL_LABEL}
+            label={translations.URL_LABEL}
             fullWidth
             error={errors.url}
             isInvalid={!!errors.url?.length}
@@ -109,7 +129,7 @@ export const LambdaRuleTypeExpression: React.FunctionComponent<
             <EuiFieldText
               value={url}
               required
-              placeholder={i18n.URL_PLACEHOLDER}
+              placeholder={translations.URL_PLACEHOLDER}
               onChange={({ target }) => setRuleParams('url', target.value)}
               fullWidth
               isInvalid={!!errors.url?.length}
@@ -133,11 +153,11 @@ export const LambdaRuleTypeExpression: React.FunctionComponent<
           {[
             {
               value: LambdaAuthType.None,
-              label: i18n.AUTHENTICATION_NONE,
+              label: translations.AUTHENTICATION_NONE,
             },
             {
               value: LambdaAuthType.Basic,
-              label: i18n.AUTHENTICATION_BASIC,
+              label: translations.AUTHENTICATION_BASIC,
               children: authType === LambdaAuthType.Basic && basicAuthFields,
             },
           ].map(({ label, value, children }) => (
@@ -157,6 +177,68 @@ export const LambdaRuleTypeExpression: React.FunctionComponent<
           ))}
         </>
       </EuiFormRow>
+
+      <EuiSpacer size="m" />
+
+      <EuiFlexItem>
+        <EuiFormRow
+          fullWidth
+          data-test-subj="intervalFormRow"
+          display="rowCompressed"
+          isInvalid={!!errors.additionalLookBackTime?.length}
+          error={errors.additionalLookBackTime}
+        >
+          <EuiFlexGroup gutterSize="s">
+            <EuiFlexItem grow={2}>
+              <EuiFieldNumber
+                prepend={i18n.translate('xpack.stackAlerts.lambda.ui.additionalLookBackTime', {
+                  defaultMessage: 'Look back time',
+                })}
+                fullWidth
+                min={1}
+                isInvalid={!!errors.additionalLookBackTime?.length}
+                value={lookBackTime}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value !== '') {
+                    const parsedValue = parseInt(value, 10);
+                    if (!isNaN(parsedValue)) {
+                      setLookBackTime(parsedValue);
+                    }
+                  }
+                }}
+              />
+            </EuiFlexItem>
+            <EuiFlexItem grow={3}>
+              <EuiSelect
+                fullWidth
+                value={lookBackUnit}
+                options={[
+                  {
+                    text: 'second',
+                    value: 's',
+                  },
+                  {
+                    text: 'minute',
+                    value: 'm',
+                  },
+                  {
+                    text: 'hour',
+                    value: 'h',
+                  },
+                  {
+                    text: 'month',
+                    value: 'M',
+                  },
+                ]}
+                onChange={(e) => {
+                  setLookBackUnit(e.target.value as TimeUnit);
+                }}
+              />
+            </EuiFlexItem>
+          </EuiFlexGroup>
+        </EuiFormRow>
+      </EuiFlexItem>
 
       <EuiSpacer size="m" />
     </>

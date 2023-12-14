@@ -28,10 +28,14 @@ export interface GroupByType {
   validNormalizedTypes: string[];
 }
 
+export type TimeUnit = 's' | 'm' | 'h' | 'M';
+export type TimeWithUnit = `${number}${TimeUnit}`;
+
 export interface LambdaRuleParams extends RuleTypeParams {
   method: 'post' | 'put';
   url: string;
   username: string;
   password: string;
   authType: LambdaAuthType;
+  additionalLookBackTime: TimeWithUnit;
 }

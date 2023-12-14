@@ -162,20 +162,14 @@ export function getRuleType(
       params: ParamsSchema,
     },
     actionVariables: {
-      context: [
-        // { name: 'message', description: actionVariableContextMessageLabel },
-        // { name: 'title', description: actionVariableContextTitleLabel },
-        // { name: 'group', description: actionVariableContextGroupLabel },
-        // { name: 'date', description: actionVariableContextDateLabel },
-        // { name: 'value', description: actionVariableContextValueLabel },
-        // { name: 'conditions', description: actionVariableContextConditionsLabel },
-      ],
+      context: [],
       params: [
         { name: 'method', description: actionVariableUrlLabel },
         { name: 'url', description: actionVariableUrlLabel },
         { name: 'authType', description: actionVariableUrlLabel },
         { name: 'username', description: actionVariableUrlLabel },
         { name: 'password', description: actionVariableUrlLabel },
+        { name: 'additionalLookBackTime', description: actionVariableUrlLabel },
       ],
     },
     minimumLicenseRequired: 'basic',

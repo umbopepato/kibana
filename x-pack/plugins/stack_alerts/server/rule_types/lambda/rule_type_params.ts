@@ -13,6 +13,7 @@ export const ParamsSchema = schema.object({
   method: schema.string(),
   url: schema.uri(),
   authType: schema.string(),
-  username: schema.maybe(schema.string({ minLength: 1 })),
-  password: schema.maybe(schema.string({ minLength: 1 })),
+  username: schema.maybe(schema.string()),
+  password: schema.maybe(schema.string()),
+  additionalLookBackTime: schema.maybe(schema.string()),
 });
