@@ -11,6 +11,7 @@ export const ruleTypeIdWithValidLegacyConsumers: Record<string, string[]> = {
   'example.always-firing': [ALERTS_FEATURE_ID],
   transform_health: [ALERTS_FEATURE_ID],
   '.index-threshold': [ALERTS_FEATURE_ID],
+  '.lambda': [ALERTS_FEATURE_ID],
   '.geo-containment': [ALERTS_FEATURE_ID],
   '.es-query': [ALERTS_FEATURE_ID, 'discover'],
   'xpack.ml.anomaly_detection_alert': [ALERTS_FEATURE_ID],

@@ -43,6 +43,14 @@ export function ruleTypeGroupCompare(
     return 1;
   }
 
+  if (groupNameA === 'stackAlerts') {
+    return -1;
+  }
+
+  if (groupNameB === 'stackAlerts') {
+    return 1;
+  }
+
   return groupNames
     ? groupNames.get(groupNameA)!.localeCompare(groupNames.get(groupNameB)!)
     : groupNameA.localeCompare(groupNameB);
