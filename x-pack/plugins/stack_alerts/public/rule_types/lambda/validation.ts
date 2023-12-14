@@ -5,134 +5,51 @@
  * 2.0.
  */
 
-import { toElasticsearchQuery, fromKueryExpression } from '@kbn/es-query';
 import { i18n } from '@kbn/i18n';
-import {
-  ValidationResult,
-  builtInGroupByTypes,
-  builtInAggregationTypes,
-  builtInComparators,
-} from '@kbn/triggers-actions-ui-plugin/public';
-import { IndexThresholdRuleParams } from './types';
+import { ValidationResult } from '@kbn/triggers-actions-ui-plugin/public';
+import { isUrl } from '@kbn/es-ui-shared-plugin/static/validators/string';
+import { LambdaAuthType } from './constants';
+import { LambdaRuleParams } from './types';
 
-export const validateExpression = (alertParams: IndexThresholdRuleParams): ValidationResult => {
-  const {
-    index,
-    timeField,
-    aggType,
-    aggField,
-    groupBy,
-    termSize,
-    termField,
-    threshold,
-    timeWindowSize,
-    thresholdComparator,
-    filterKuery,
-  } = alertParams;
+const REQUIRED_FIELDS = ['method', 'url'] as Array<keyof LambdaRuleParams>;
+const REQUIRED_BASIC_AUTH_FIELDS = ['username', 'password'] as Array<keyof LambdaRuleParams>;
+const REQUIRED_FIELD_MESSAGE = i18n.translate('xpack.stackAlerts.lambda.ui.requiredField', {
+  defaultMessage: 'This field is required.',
+});
+
+export const validateExpression = (ruleParams: LambdaRuleParams): ValidationResult => {
+  const { url, authType } = ruleParams;
   const validationResult = { errors: {} };
-  const errors = {
-    aggField: new Array<string>(),
-    termSize: new Array<string>(),
-    termField: new Array<string>(),
-    timeWindowSize: new Array<string>(),
-    threshold0: new Array<string>(),
-    threshold1: new Array<string>(),
-    index: new Array<string>(),
-    timeField: new Array<string>(),
-    filterKuery: new Array<string>(),
+  const errors: Record<keyof LambdaRuleParams, string[]> = {
+    method: new Array<string>(),
+    url: new Array<string>(),
+    authType: new Array<string>(),
+    username: new Array<string>(),
+    password: new Array<string>(),
   };
   validationResult.errors = errors;
 
-  if (!!filterKuery) {
-    try {
-      toElasticsearchQuery(fromKueryExpression(filterKuery as string));
-    } catch (e) {
-      errors.filterKuery.push(
-        i18n.translate('xpack.stackAlerts.threshold.ui.validation.error.invalidKql', {
-          defaultMessage: 'Filter query is invalid.',
-        })
-      );
+  REQUIRED_FIELDS.forEach((f) => {
+    if (!ruleParams[f]) {
+      errors[f].push(REQUIRED_FIELD_MESSAGE);
     }
+  });
+
+  if (authType === LambdaAuthType.Basic) {
+    REQUIRED_BASIC_AUTH_FIELDS.forEach((f) => {
+      if (!ruleParams[f]) {
+        errors[f].push(REQUIRED_FIELD_MESSAGE);
+      }
+    });
   }
 
-  if (!index || index.length === 0) {
-    errors.index.push(
-      i18n.translate('xpack.stackAlerts.threshold.ui.validation.error.requiredIndexText', {
-        defaultMessage: 'Index is required.',
+  if (url && !isUrl(url)) {
+    errors.url.push(
+      i18n.translate('xpack.stackAlerts.lambda.ui.urlInvalid', {
+        defaultMessage: 'This is not a valid url.',
       })
     );
   }
-  if (!timeField) {
-    errors.timeField.push(
-      i18n.translate('xpack.stackAlerts.threshold.ui.validation.error.requiredTimeFieldText', {
-        defaultMessage: 'Time field is required.',
-      })
-    );
-  }
-  if (aggType && builtInAggregationTypes[aggType].fieldRequired && !aggField) {
-    errors.aggField.push(
-      i18n.translate('xpack.stackAlerts.threshold.ui.validation.error.requiredAggFieldText', {
-        defaultMessage: 'Aggregation field is required.',
-      })
-    );
-  }
-  if (
-    groupBy &&
-    builtInGroupByTypes[groupBy] &&
-    builtInGroupByTypes[groupBy].sizeRequired &&
-    !termSize
-  ) {
-    errors.termSize.push(
-      i18n.translate('xpack.stackAlerts.threshold.ui.validation.error.requiredTermSizedText', {
-        defaultMessage: 'Term size is required.',
-      })
-    );
-  }
-  if (
-    groupBy &&
-    builtInGroupByTypes[groupBy].validNormalizedTypes &&
-    builtInGroupByTypes[groupBy].validNormalizedTypes.length > 0 &&
-    !termField
-  ) {
-    errors.termField.push(
-      i18n.translate('xpack.stackAlerts.threshold.ui.validation.error.requiredTermFieldText', {
-        defaultMessage: 'Term field is required.',
-      })
-    );
-  }
-  if (!timeWindowSize) {
-    errors.timeWindowSize.push(
-      i18n.translate('xpack.stackAlerts.threshold.ui.validation.error.requiredTimeWindowSizeText', {
-        defaultMessage: 'Time window size is required.',
-      })
-    );
-  }
-  if (!threshold || threshold.length === 0 || threshold[0] === undefined) {
-    errors.threshold0.push(
-      i18n.translate('xpack.stackAlerts.threshold.ui.validation.error.requiredThreshold0Text', {
-        defaultMessage: 'Threshold0 is required.',
-      })
-    );
-  }
-  if (
-    thresholdComparator &&
-    builtInComparators[thresholdComparator].requiredValues > 1 &&
-    (!threshold ||
-      threshold[1] === undefined ||
-      (threshold && threshold.length < builtInComparators[thresholdComparator!].requiredValues))
-  ) {
-    errors.threshold1.push(
-      i18n.translate('xpack.stackAlerts.threshold.ui.validation.error.requiredThreshold1Text', {
-        defaultMessage: 'Threshold1 is required.',
-      })
-    );
-  }
-  if (threshold && threshold.length === 2 && threshold[0] > threshold[1]) {
-    errors.threshold1.push(
-      i18n.translate('xpack.stackAlerts.threshold.ui.validation.error.greaterThenThreshold0Text', {
-        defaultMessage: 'Threshold1 should be > Threshold0.',
-      })
-    );
-  }
+
   return validationResult;
 };

@@ -34,14 +34,15 @@ import {
   EuiButtonIcon,
   EuiHorizontalRule,
   EuiEmptyPrompt,
-  EuiListGroupItem,
-  EuiListGroup,
   EuiLink,
   EuiText,
   EuiNotificationBadge,
   EuiErrorBoundary,
   EuiToolTip,
   EuiCallOut,
+  EuiCard,
+  EuiIcon,
+  EuiPanel,
 } from '@elastic/eui';
 import { capitalize } from 'lodash';
 import { KibanaFeature } from '@kbn/features-plugin/public';
@@ -542,59 +543,70 @@ export const RuleForm = ({
               <EuiNotificationBadge color="subdued">{items.length}</EuiNotificationBadge>
             </EuiFlexItem>
           </EuiFlexGroup>
-          <EuiHorizontalRule size="full" margin="xs" />
+          <EuiHorizontalRule size="full" margin="s" />
         </>
       )}
-      <EuiListGroup flush={true} gutterSize="m" size="m" maxWidth={false}>
+      <EuiFlexGrid columns={2} gutterSize="m">
         {items
           .sort((a, b) => ruleTypeCompare(a, b))
-          .map((item, index) => {
-            const ruleTypeListItemHtml = (
-              <span>
-                <strong>{item.name}</strong>
-                <EuiText color="subdued" size="s">
-                  <p>{item.ruleTypeItem.description}</p>
-                </EuiText>
-              </span>
+          .map((item) => {
+            const title = (
+              <EuiTitle size="xs">
+                <h4>{item.name}</h4>
+              </EuiTitle>
             );
             return (
-              <EuiListGroupItem
-                wrapText
-                key={index}
-                data-test-subj={`${item.id}-SelectOption`}
-                color="primary"
-                label={
-                  item.checkEnabledResult.isEnabled ? (
-                    ruleTypeListItemHtml
-                  ) : (
-                    <EuiToolTip
-                      position="top"
-                      data-test-subj={`${item.id}-disabledTooltip`}
-                      content={item.checkEnabledResult.message}
-                    >
-                      {ruleTypeListItemHtml}
-                    </EuiToolTip>
-                  )
-                }
-                isDisabled={!item.checkEnabledResult.isEnabled}
-                onClick={() => {
-                  setRuleProperty('ruleTypeId', item.id);
-                  setRuleTypeModel(item.ruleTypeItem);
-                  setActions([]);
-                  setRuleProperty('params', {});
-                  if (ruleTypeIndex && ruleTypeIndex.has(item.id)) {
-                    setDefaultActionGroupId(ruleTypeIndex.get(item.id)!.defaultActionGroupId);
+              <EuiFlexItem key={item.id}>
+                <EuiCard
+                  layout="horizontal"
+                  icon={
+                    <EuiPanel hasShadow={false} paddingSize="xs">
+                      <EuiIcon size="l" type={item.ruleTypeItem.iconClass} />
+                    </EuiPanel>
                   }
+                  data-test-subj={`${item.id}-SelectOption`}
+                  title={
+                    item.checkEnabledResult.isEnabled ? (
+                      title
+                    ) : (
+                      <EuiToolTip
+                        position="top"
+                        data-test-subj={`${item.id}-disabledTooltip`}
+                        content={item.checkEnabledResult.message}
+                      >
+                        {title}
+                      </EuiToolTip>
+                    )
+                  }
+                  description={item.ruleTypeItem.description}
+                  isDisabled={!item.checkEnabledResult.isEnabled}
+                  onClick={() => {
+                    setRuleProperty('ruleTypeId', item.id);
+                    setRuleTypeModel(item.ruleTypeItem);
+                    setActions([]);
+                    setRuleProperty('params', {});
+                    if (ruleTypeIndex && ruleTypeIndex.has(item.id)) {
+                      setDefaultActionGroupId(ruleTypeIndex.get(item.id)!.defaultActionGroupId);
+                    }
 
-                  if (useRuleProducer && !MULTI_CONSUMER_RULE_TYPE_IDS.includes(item.id)) {
-                    setConsumer(solution as RuleCreationValidConsumer);
+                    if (useRuleProducer && !MULTI_CONSUMER_RULE_TYPE_IDS.includes(item.id)) {
+                      setConsumer(solution as RuleCreationValidConsumer);
+                    }
+                  }}
+                  betaBadgeProps={
+                    item.ruleTypeItem.id === '.lambda'
+                      ? {
+                          label: 'New',
+                          color: 'accent',
+                        }
+                      : undefined
                   }
-                }}
-              />
+                />
+              </EuiFlexItem>
             );
           })}
-      </EuiListGroup>
-      <EuiSpacer size="m" />
+      </EuiFlexGrid>
+      <EuiSpacer size="xl" />
     </Fragment>
   ));
 

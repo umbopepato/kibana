@@ -6,15 +6,13 @@
  */
 
 import { schema, TypeOf } from '@kbn/config-schema';
-import { CoreQueryParamsSchemaProperties } from '@kbn/triggers-actions-ui-plugin/server';
-
-// rule type parameters
 
 export type Params = TypeOf<typeof ParamsSchema>;
 
 export const ParamsSchema = schema.object({
-  ...CoreQueryParamsSchemaProperties,
+  method: schema.string(),
   url: schema.uri(),
-  username: schema.string({ minLength: 1 }),
-  password: schema.string({ minLength: 1 }),
+  authType: schema.string(),
+  username: schema.maybe(schema.string({ minLength: 1 })),
+  password: schema.maybe(schema.string({ minLength: 1 })),
 });

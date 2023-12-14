@@ -6,6 +6,7 @@
  */
 
 import { RuleTypeParams } from '@kbn/alerting-plugin/common';
+import { LambdaAuthType } from './constants';
 
 export interface Comparator {
   text: string;
@@ -27,17 +28,10 @@ export interface GroupByType {
   validNormalizedTypes: string[];
 }
 
-export interface IndexThresholdRuleParams extends RuleTypeParams {
-  index: string | string[];
-  timeField?: string;
-  aggType: string;
-  aggField?: string;
-  groupBy?: string;
-  termSize?: number;
-  termField?: string | string[];
-  thresholdComparator?: string;
-  threshold: number[];
-  timeWindowSize: number;
-  timeWindowUnit: string;
-  filterKuery?: string;
+export interface LambdaRuleParams extends RuleTypeParams {
+  method: 'post' | 'put';
+  url: string;
+  username: string;
+  password: string;
+  authType: LambdaAuthType;
 }
