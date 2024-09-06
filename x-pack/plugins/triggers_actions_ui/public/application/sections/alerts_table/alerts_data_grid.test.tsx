@@ -310,26 +310,28 @@ describe('AlertsDataGrid', () => {
     });
 
     describe('cell Actions', () => {
-      const mockGetCellActions = jest.fn((columnId: string): EuiDataGridColumnCellAction[] => [
-        ({ rowIndex, Component }) => {
-          const label = 'Fake Cell First Action';
-          return (
-            <Component
-              onClick={() => cellActionOnClickMockedFn(columnId, rowIndex)}
-              data-test-subj={'fake-cell-first-action'}
-              iconType="refresh"
-              aria-label={label}
-            />
-          );
-        },
-      ]);
+      const mockGetCellActionsForColumn = jest.fn(
+        (columnId: string): EuiDataGridColumnCellAction[] => [
+          ({ rowIndex, Component }) => {
+            const label = 'Fake Cell First Action';
+            return (
+              <Component
+                onClick={() => cellActionOnClickMockedFn(columnId, rowIndex)}
+                data-test-subj={'fake-cell-first-action'}
+                iconType="refresh"
+                aria-label={label}
+              />
+            );
+          },
+        ]
+      );
       const props: TestAlertsDataGridProps = {
         ...mockDataGridProps,
-        getCellActionsOptions: () => ({
-          getCellActions: mockGetCellActions,
+        cellActionsOptions: {
+          getCellActionsForColumn: mockGetCellActionsForColumn,
           visibleCellActions: 2,
           disabledCellActions: [],
-        }),
+        },
       };
 
       it('should render cell actions on hover', async () => {
