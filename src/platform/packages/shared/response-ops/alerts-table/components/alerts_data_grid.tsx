@@ -37,7 +37,7 @@ import { NonVirtualizedGridBody } from './non_virtualized_grid_body';
 const AlertsFlyout = lazy(() => import('./alerts_flyout')) as typeof AlertsFlyoutType;
 
 const defaultGridStyle: EuiDataGridStyle = {
-  border: 'none',
+  border: 'horizontal',
   header: 'underline',
   fontSize: 's',
 };
@@ -318,8 +318,12 @@ export const AlertsDataGrid = typedMemo(
       return { visibleColumns, setVisibleColumns: onChangeVisibleColumns };
     }, [visibleColumns, onChangeVisibleColumns]);
 
-    const rowStyles = useMemo(
+    const styles = useMemo(
       () => css`
+        .euiDataGridHeader {
+          border-bottom: ${euiThemeVars.euiBorderThin};
+        }
+
         .alertsTableHighlightedRow {
           background-color: ${euiThemeVars.euiColorHighlight};
         }
@@ -356,7 +360,7 @@ export const AlertsDataGrid = typedMemo(
               // Ref: https://eui.elastic.co/#/tabular-content/data-grid#virtualization
               key={height ? 'fixedHeight' : 'autoHeight'}
               ref={dataGridRef}
-              css={rowStyles}
+              css={styles}
               aria-label="Alerts table"
               data-test-subj="alertsTable"
               height={height}

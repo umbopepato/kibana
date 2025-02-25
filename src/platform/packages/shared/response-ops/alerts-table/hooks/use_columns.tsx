@@ -7,16 +7,33 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { type MutableRefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { EuiDataGridColumn, EuiDataGridOnColumnResizeData } from '@elastic/eui';
+import React, {
+  type MutableRefObject,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import {
+  EuiDataGridColumn,
+  EuiDataGridOnColumnResizeData,
+  EuiFlexGroup,
+  EuiFlexItem,
+  EuiToolTip,
+} from '@elastic/eui';
 import type { IStorageWrapper } from '@kbn/kibana-utils-plugin/public';
 import type { AlertField, AlertFieldCategoriesMap } from '@kbn/alerting-types';
 import { isEmpty } from 'lodash';
 import { useFetchAlertsFieldsQuery } from '@kbn/alerts-ui-shared/src/common/hooks/use_fetch_alerts_fields_query';
 import { AlertsQueryContext } from '@kbn/alerts-ui-shared/src/common/contexts/alerts_query_context';
 import type { HttpStart } from '@kbn/core-http-browser';
-import type { AlertsTablePersistedConfiguration } from '../components/alerts_table';
+import { css } from '@emotion/react';
+import { FieldIcon, getFieldIconType } from '@kbn/field-utils';
+import { FieldName } from '@kbn/response-ops-alerts-fields-browser/components/field_name';
+import { FieldCaption } from '@kbn/response-ops-alerts-fields-browser/components/field_caption';
 import { toggleColumn } from './toggle_column';
+import type { AlertsTablePersistedConfiguration } from '../components/alerts_table';
 
 export interface UseColumnsArgs {
   ruleTypeIds: string[];
@@ -73,19 +90,58 @@ const euiColumnFactory = (
   defaultColumns: EuiDataGridColumn[]
 ): EuiDataGridColumn => {
   const defaultColumn = getColumnByColumnId(defaultColumns, columnId);
-  const column = defaultColumn ? defaultColumn : { id: columnId };
-
-  const browserFieldsProps = getBrowserFieldProps(columnId, alertFieldsByCategory);
+  const { display, displayAsText, ...column } = defaultColumn ? defaultColumn : { id: columnId };
+  const field = getBrowserFieldProps(columnId, alertFieldsByCategory);
+  const displayOption = display
+    ? { display }
+    : 'name' in field
+    ? {
+        display: (
+          <EuiToolTip
+            content={
+              <EuiFlexGroup
+                gutterSize="s"
+                alignItems={!field.metadata?.short ? 'center' : 'flexStart'}
+              >
+                <EuiFlexItem grow={false}>
+                  <FieldIcon type={getFieldIconType(field)} />
+                </EuiFlexItem>
+                <EuiFlexItem
+                  css={css`
+                    min-width: 0;
+                  `}
+                >
+                  <EuiFlexGroup direction="column" gutterSize="none">
+                    <EuiFlexItem>
+                      <FieldName>{field.name}</FieldName>
+                    </EuiFlexItem>
+                    {field.metadata?.short && (
+                      <EuiFlexItem>
+                        <FieldCaption>{field.metadata?.short}</FieldCaption>
+                      </EuiFlexItem>
+                    )}
+                  </EuiFlexGroup>
+                </EuiFlexItem>
+              </EuiFlexGroup>
+            }
+          >
+            {displayAsText}
+          </EuiToolTip>
+        ),
+      }
+    : { displayAsText };
+  console.log({ displayOption });
   return {
     ...column,
-    schema: fieldTypeToDataGridColumnTypeMapper(browserFieldsProps.type),
+    ...displayOption,
+    schema: fieldTypeToDataGridColumnTypeMapper(field.type),
   };
 };
 
 const getBrowserFieldProps = (
   columnId: string,
   alertFieldsByCategory: AlertFieldCategoriesMap
-): Partial<AlertField> => {
+): AlertField | { type: string } => {
   const defaultFieldSpec = { type: 'string' };
 
   if (!alertFieldsByCategory || Object.keys(alertFieldsByCategory).length === 0) {
@@ -119,6 +175,7 @@ const populateColumns = (
   defaultColumns: EuiDataGridColumn[]
 ): EuiDataGridColumn[] => {
   return columns.map((column: EuiDataGridColumn) => {
+    console.log({ populated: isPopulatedColumn(column), column });
     return isPopulatedColumn(column)
       ? column
       : euiColumnFactory(column.id, browserFields, defaultColumns);

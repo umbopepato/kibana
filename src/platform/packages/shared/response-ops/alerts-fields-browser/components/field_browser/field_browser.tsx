@@ -121,6 +121,7 @@ const AlertFieldsFlyout = ({
     ({ fields }) => Object.values(fields)
   );
   const sortedSelectedFields = useMemo(
+    // TODO make this resilient to missing fields
     () => selectedFieldIds.map((fid) => allFields.find(({ name }) => name === fid) as AlertField),
     [allFields, selectedFieldIds]
   );
