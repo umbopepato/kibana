@@ -23,7 +23,7 @@ import {
 import { capitalize, groupBy } from 'lodash';
 import React, { useRef, useState, useCallback, useMemo } from 'react';
 
-import type { AlertFieldCategoriesMap } from '@kbn/alerting-types';
+import { AlertFieldCategoriesMap, AlertFieldCategory } from '@kbn/alerting-types';
 import type { AlertField } from '@kbn/alerting-types';
 import {
   FieldList,
@@ -33,6 +33,7 @@ import {
   GroupedFieldsParams,
   useFieldFilters,
   ExistenceFetchStatus,
+  FieldsGroup,
 } from '@kbn/unified-field-list';
 import { FieldNameSearch } from '@kbn/unified-field-list/src/components/field_list_filters/field_name_search';
 import { FieldIcon, getFieldIconType } from '@kbn/field-utils';
@@ -92,7 +93,7 @@ export const FieldBrowserComponent: React.FC<FieldBrowserProps> = ({
       {show && (
         <AlertFieldsFlyout
           onClose={onHide}
-          alertFields={Object.values(alertFields).flatMap(({ fields }) => Object.values(fields))}
+          alertFieldsByCategory={alertFields}
           selectedFieldIds={columnIds}
           onResetColumns={onResetColumns}
           onToggleColumn={onToggleColumn}
@@ -104,24 +105,28 @@ export const FieldBrowserComponent: React.FC<FieldBrowserProps> = ({
 
 const AlertFieldsFlyout = ({
   onClose,
-  alertFields,
+  alertFieldsByCategory,
   selectedFieldIds,
   onResetColumns,
   onToggleColumn,
 }: {
   onClose: () => void;
-  alertFields: AlertField[];
+  alertFieldsByCategory: AlertFieldCategoriesMap;
   selectedFieldIds: string[];
   onResetColumns: FieldBrowserProps['onResetColumns'];
   onToggleColumn: FieldBrowserProps['onToggleColumn'];
 }) => {
   const { euiTheme } = useEuiTheme();
+  const allFields = (Object.values(alertFieldsByCategory) as AlertFieldCategory[]).flatMap(
+    ({ fields }) => Object.values(fields)
+  );
   const sortedSelectedFields = useMemo(
-    () => alertFields.filter(({ name }) => selectedFieldIds.includes(name)),
-    [alertFields, selectedFieldIds]
+    () => selectedFieldIds.map((fid) => allFields.find(({ name }) => name === fid) as AlertField),
+    [allFields, selectedFieldIds]
   );
   const { fieldListFiltersProps, fieldListGroupedProps } = useGroupedFields({
-    allFields: alertFields,
+    allFields,
+    alertFieldCategories: alertFieldsByCategory,
     sortedSelectedFields,
     getCustomFieldType: (field) => field.category,
   });
@@ -130,7 +135,7 @@ const AlertFieldsFlyout = ({
     <EuiFlyout onClose={() => onClose()} size="s" paddingSize="m" hideCloseButton side="left">
       {/* Not using EuiFlyoutBody here since the field list has to manage its virtual scrolling */}
       <FieldList
-        isProcessing={alertFields == null}
+        isProcessing={alertFieldsByCategory == null}
         prepend={
           <EuiPanel hasShadow={false} paddingSize="s">
             <FieldNameSearch
@@ -235,12 +240,15 @@ const AlertFieldsFlyout = ({
 
 const useGroupedFields = ({
   allFields,
+  alertFieldCategories,
   sortedSelectedFields,
   getCustomFieldType,
 }: Pick<
   GroupedFieldsParams<AlertField>,
   'allFields' | 'sortedSelectedFields' | 'getCustomFieldType'
->) => {
+> & {
+  alertFieldCategories: AlertFieldCategoriesMap;
+}) => {
   const fieldListFilters = useFieldFilters<AlertField>({
     allFields,
     services: { core: { docLinks: {} as any } }, // Unused
@@ -278,7 +286,7 @@ const useGroupedFields = ({
         forceOpenWithSearchResults: true,
       },
       ...Object.fromEntries(
-        Object.keys(groupedFields).map((category) => [
+        Object.keys(groupedFields).map((category): [string, FieldsGroup<AlertField>] => [
           category,
           {
             fields: groupedFields[category],
@@ -287,17 +295,18 @@ const useGroupedFields = ({
             isAffectedByTimeFilter: false,
             isInitiallyOpen: category === 'base',
             showInAccordion: true,
-            title: capitalize(category),
+            title: alertFieldCategories[category]?.title ?? capitalize(category),
             hideDetails: true,
             hideIfEmpty: true,
             forceOpenWithSearchResults: true,
+            helpText: alertFieldCategories[category]?.description,
           },
         ])
       ),
     };
 
     return fieldGroupDefinitions;
-  }, [sortedSelectedFields, allFields]);
+  }, [sortedSelectedFields, allFields, alertFieldCategories]);
 
   const fieldGroups: FieldListGroups<AlertField> = useMemo(() => {
     if (!onFilterFieldList) {
