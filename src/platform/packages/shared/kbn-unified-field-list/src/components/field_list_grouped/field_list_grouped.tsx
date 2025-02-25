@@ -251,6 +251,7 @@ function InnerFieldListGrouped<T extends FieldListItem = DataViewField>({
               <FieldsAccordion<T>
                 id={`${dataTestSubject}${key}`}
                 initialIsOpen={Boolean(accordionState[key])}
+                forceOpenWithSearchResults={fieldGroup.forceOpenWithSearchResults}
                 label={fieldGroup.title}
                 helpTooltip={fieldGroup.helpText}
                 hideDetails={fieldGroup.hideDetails}

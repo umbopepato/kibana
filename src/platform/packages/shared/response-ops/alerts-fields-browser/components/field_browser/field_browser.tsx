@@ -7,16 +7,42 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { EuiButtonEmpty, EuiToolTip } from '@elastic/eui';
-import { debounce } from 'lodash';
-import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import {
+  EuiButtonEmpty,
+  EuiFlyout,
+  EuiListGroupItem,
+  EuiPanel,
+  EuiToolTip,
+  EuiFlexGroup,
+  EuiFlexItem,
+  EuiFlyoutFooter,
+  useEuiTheme,
+  logicalCSS,
+  EuiButton,
+} from '@elastic/eui';
+import { capitalize, groupBy } from 'lodash';
+import React, { useRef, useState, useCallback, useMemo } from 'react';
 
 import type { AlertFieldCategoriesMap } from '@kbn/alerting-types';
+import type { AlertField } from '@kbn/alerting-types';
+import {
+  FieldList,
+  FieldListGrouped,
+  type FieldListGroups,
+  type FieldListItem,
+  GroupedFieldsParams,
+  useFieldFilters,
+  ExistenceFetchStatus,
+} from '@kbn/unified-field-list';
+import { FieldNameSearch } from '@kbn/unified-field-list/src/components/field_list_filters/field_name_search';
+import { FieldIcon, getFieldIconType } from '@kbn/field-utils';
+import { css } from '@emotion/react';
+import { i18n } from '@kbn/i18n';
+import { FieldCaption } from '../field_caption/field_caption';
 import type { FieldBrowserProps } from '../../types';
-import { FieldBrowserModal } from '../field_browser_modal/field_browser_modal';
-import { filterBrowserFieldsByFieldName, filterSelectedAlertFields } from '../../helpers';
-import * as i18n from '../../translations';
+import * as translations from '../../translations';
 import { styles } from './field_browser.styles';
+import { FieldName } from '../field_name';
 
 const FIELDS_BUTTON_CLASS_NAME = 'fields-button';
 
@@ -31,62 +57,10 @@ export const FieldBrowserComponent: React.FC<FieldBrowserProps> = ({
   alertFields,
   onResetColumns,
   onToggleColumn,
-  options,
-  width,
 }) => {
-  const initialCategories = useMemo(
-    () => options?.preselectedCategoryIds ?? [],
-    [options?.preselectedCategoryIds]
-  );
-
   const customizeColumnsButtonRef = useRef<HTMLButtonElement | null>(null);
-  /** all field names shown in the field browser must contain this string (when specified) */
-  const [filterInput, setFilterInput] = useState('');
-  /** debounced filterInput, the one that is applied to the filteredBrowserFields */
-  const [appliedFilterInput, setAppliedFilterInput] = useState('');
-  /** all fields in this collection have field names that match the filterInput */
-  const [filteredBrowserFields, setFilteredBrowserFields] =
-    useState<AlertFieldCategoriesMap | null>(null);
-  /** when true, show only the the selected field */
-  const [filterSelectedEnabled, setFilterSelectedEnabled] = useState(false);
-  /** when true, show a spinner in the input to indicate the field browser is searching for matching field names */
-  const [isSearching, setIsSearching] = useState(false);
-  /** this category will be displayed in the right-hand pane of the field browser */
-  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>(initialCategories);
   /** show the field browser */
   const [show, setShow] = useState(false);
-
-  // debounced function to apply the input filter
-  // will delay the call to setAppliedFilterInput by INPUT_TIMEOUT ms
-  // the parameter used will be the last one passed
-  const debouncedApplyFilterInput = useMemo(
-    () =>
-      debounce((input: string) => {
-        setAppliedFilterInput(input);
-      }, INPUT_TIMEOUT),
-    []
-  );
-  useEffect(() => {
-    return () => {
-      debouncedApplyFilterInput.cancel();
-    };
-  }, [debouncedApplyFilterInput]);
-
-  const selectionFilteredBrowserFields = useMemo<AlertFieldCategoriesMap>(
-    () =>
-      filterSelectedEnabled ? filterSelectedAlertFields({ alertFields, columnIds }) : alertFields,
-    [alertFields, columnIds, filterSelectedEnabled]
-  );
-
-  useEffect(() => {
-    setFilteredBrowserFields(
-      filterBrowserFieldsByFieldName({
-        browserFields: selectionFilteredBrowserFields,
-        substring: appliedFilterInput,
-      })
-    );
-    setIsSearching(false);
-  }, [appliedFilterInput, selectionFilteredBrowserFields]);
 
   /** Shows / hides the field browser */
   const onShow = useCallback(() => {
@@ -95,38 +69,14 @@ export const FieldBrowserComponent: React.FC<FieldBrowserProps> = ({
 
   /** Invoked when the field browser should be hidden */
   const onHide = useCallback(() => {
-    setFilterInput('');
-    setAppliedFilterInput('');
-    setFilteredBrowserFields(null);
-    setFilterSelectedEnabled(false);
-    setIsSearching(false);
-    setSelectedCategoryIds(initialCategories);
     setShow(false);
-  }, [initialCategories]);
-
-  /** Invoked when the user types in the filter input */
-  const updateFilter = useCallback(
-    (newFilterInput: string) => {
-      setIsSearching(true);
-      setFilterInput(newFilterInput);
-      debouncedApplyFilterInput(newFilterInput);
-    },
-    [debouncedApplyFilterInput]
-  );
-
-  /** Invoked when the user changes the view all/selected value  */
-  const onFilterSelectedChange = useCallback(
-    (filterSelected: boolean) => {
-      setFilterSelectedEnabled(filterSelected);
-    },
-    [setFilterSelectedEnabled]
-  );
+  }, []);
 
   return (
     <div css={styles.buttonContainer} data-test-subj="fields-browser-button-container">
-      <EuiToolTip content={i18n.FIELDS_BROWSER}>
+      <EuiToolTip content={translations.FIELDS_BROWSER}>
         <EuiButtonEmpty
-          aria-label={i18n.FIELDS_BROWSER}
+          aria-label={translations.FIELDS_BROWSER}
           buttonRef={customizeColumnsButtonRef}
           className={FIELDS_BUTTON_CLASS_NAME}
           color="text"
@@ -135,34 +85,259 @@ export const FieldBrowserComponent: React.FC<FieldBrowserProps> = ({
           onClick={onShow}
           size="xs"
         >
-          {i18n.FIELDS}
+          {translations.FIELDS}
         </EuiButtonEmpty>
       </EuiToolTip>
 
       {show && (
-        <FieldBrowserModal
-          columnIds={columnIds}
-          filteredBrowserFields={
-            filteredBrowserFields != null ? filteredBrowserFields : alertFields
-          }
-          filterSelectedEnabled={filterSelectedEnabled}
-          isSearching={isSearching}
-          setSelectedCategoryIds={setSelectedCategoryIds}
-          onFilterSelectedChange={onFilterSelectedChange}
-          onHide={onHide}
+        <AlertFieldsFlyout
+          onClose={onHide}
+          alertFields={Object.values(alertFields).flatMap(({ fields }) => Object.values(fields))}
+          selectedFieldIds={columnIds}
           onResetColumns={onResetColumns}
-          onSearchInputChange={updateFilter}
           onToggleColumn={onToggleColumn}
-          options={options}
-          restoreFocusTo={customizeColumnsButtonRef}
-          searchInput={filterInput}
-          appliedFilterInput={appliedFilterInput}
-          selectedCategoryIds={selectedCategoryIds}
-          width={width}
         />
       )}
     </div>
   );
 };
+
+const AlertFieldsFlyout = ({
+  onClose,
+  alertFields,
+  selectedFieldIds,
+  onResetColumns,
+  onToggleColumn,
+}: {
+  onClose: () => void;
+  alertFields: AlertField[];
+  selectedFieldIds: string[];
+  onResetColumns: FieldBrowserProps['onResetColumns'];
+  onToggleColumn: FieldBrowserProps['onToggleColumn'];
+}) => {
+  const { euiTheme } = useEuiTheme();
+  const sortedSelectedFields = useMemo(
+    () => alertFields.filter(({ name }) => selectedFieldIds.includes(name)),
+    [alertFields, selectedFieldIds]
+  );
+  const { fieldListFiltersProps, fieldListGroupedProps } = useGroupedFields({
+    allFields: alertFields,
+    sortedSelectedFields,
+    getCustomFieldType: (field) => field.category,
+  });
+
+  return (
+    <EuiFlyout onClose={() => onClose()} size="s" paddingSize="m" hideCloseButton side="left">
+      {/* Not using EuiFlyoutBody here since the field list has to manage its virtual scrolling */}
+      <FieldList
+        isProcessing={alertFields == null}
+        prepend={
+          <EuiPanel hasShadow={false} paddingSize="s">
+            <FieldNameSearch
+              data-test-subj="fieldNameSearch"
+              nameFilter={fieldListFiltersProps.nameFilter}
+              onChange={fieldListFiltersProps.onChangeNameFilter}
+            />
+          </EuiPanel>
+        }
+      >
+        <div
+          css={css`
+            display: flex;
+            flex-grow: 1;
+            flex-shrink: 1;
+            ${logicalCSS('padding-left', euiTheme.size.s)}
+          `}
+        >
+          <FieldListGrouped
+            {...fieldListGroupedProps}
+            fieldsExistenceStatus={ExistenceFetchStatus.succeeded}
+            fieldsExistInIndex={true}
+            renderFieldItem={({ field, fieldSearchHighlight }) => {
+              const isFieldSelected = selectedFieldIds.includes(field.name);
+              return (
+                <EuiListGroupItem
+                  showToolTip={false}
+                  label={
+                    <EuiFlexGroup
+                      gutterSize="s"
+                      alignItems={!field.metadata?.short ? 'center' : 'flexStart'}
+                    >
+                      <EuiFlexItem grow={false}>
+                        <EuiToolTip
+                          content={field.type}
+                          anchorProps={{
+                            css: css`
+                              display: flex;
+                            `,
+                          }}
+                        >
+                          <FieldIcon type={getFieldIconType(field)} />
+                        </EuiToolTip>
+                      </EuiFlexItem>
+                      <EuiFlexItem
+                        css={css`
+                          min-width: 0;
+                        `}
+                      >
+                        <EuiFlexGroup direction="column" gutterSize="none">
+                          <EuiFlexItem>
+                            <FieldName highlight={fieldSearchHighlight}>{field.name}</FieldName>
+                          </EuiFlexItem>
+                          {field.metadata?.short && (
+                            <EuiFlexItem>
+                              <FieldCaption highlight={fieldSearchHighlight}>
+                                {field.metadata?.short}
+                              </FieldCaption>
+                            </EuiFlexItem>
+                          )}
+                        </EuiFlexGroup>
+                      </EuiFlexItem>
+                    </EuiFlexGroup>
+                  }
+                  extraAction={{
+                    iconType: isFieldSelected ? 'cross' : 'plusInCircle',
+                    color: isFieldSelected ? 'danger' : 'text',
+                    'aria-label': isFieldSelected ? 'Remove' : 'Add',
+                  }}
+                  onClick={() => {
+                    onToggleColumn(field.name);
+                  }}
+                />
+              );
+            }}
+          />
+        </div>
+      </FieldList>
+      <EuiFlyoutFooter>
+        <EuiFlexGroup justifyContent="spaceBetween">
+          <EuiFlexItem grow={false}>
+            <EuiButton
+              onClick={() => {
+                onResetColumns();
+                onClose();
+              }}
+              iconType="eraser"
+            >
+              Reset to default columns
+            </EuiButton>
+          </EuiFlexItem>
+          <EuiFlexItem grow={false}>
+            <EuiButtonEmpty onClick={onClose} flush="right" iconType="cross">
+              Close
+            </EuiButtonEmpty>
+          </EuiFlexItem>
+        </EuiFlexGroup>
+      </EuiFlyoutFooter>
+    </EuiFlyout>
+  );
+};
+
+const useGroupedFields = ({
+  allFields,
+  sortedSelectedFields,
+  getCustomFieldType,
+}: Pick<
+  GroupedFieldsParams<AlertField>,
+  'allFields' | 'sortedSelectedFields' | 'getCustomFieldType'
+>) => {
+  const fieldListFilters = useFieldFilters<AlertField>({
+    allFields,
+    services: { core: { docLinks: {} as any } }, // Unused
+    getCustomFieldType,
+  });
+
+  const onFilterFieldList = fieldListFilters.onFilterField;
+
+  const scrollToTopResetCounter: number = useMemo(
+    () => Date.now(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [onFilterFieldList]
+  );
+
+  const unfilteredFieldGroups: FieldListGroups<AlertField> = useMemo(() => {
+    const selectedFields = sortedSelectedFields || [];
+
+    const sortedFields = [...(allFields || [])].sort(sortFields);
+
+    const groupedFields = groupBy(sortedFields, (field) => field.category);
+
+    const fieldGroupDefinitions: FieldListGroups<AlertField> = {
+      SelectedFields: {
+        fields: selectedFields,
+        fieldCount: selectedFields.length,
+        isInitiallyOpen: true,
+        showInAccordion: true,
+        title: i18n.translate('unifiedFieldList.useGroupedFields.selectedFieldsLabel', {
+          defaultMessage: 'Selected fields',
+        }),
+        hideDetails: false,
+        hideIfEmpty: true,
+        isAffectedByGlobalFilter: false,
+        isAffectedByTimeFilter: false,
+        forceOpenWithSearchResults: true,
+      },
+      ...Object.fromEntries(
+        Object.keys(groupedFields).map((category) => [
+          category,
+          {
+            fields: groupedFields[category],
+            fieldCount: groupedFields[category].length,
+            isAffectedByGlobalFilter: false,
+            isAffectedByTimeFilter: false,
+            isInitiallyOpen: category === 'base',
+            showInAccordion: true,
+            title: capitalize(category),
+            hideDetails: true,
+            hideIfEmpty: true,
+            forceOpenWithSearchResults: true,
+          },
+        ])
+      ),
+    };
+
+    return fieldGroupDefinitions;
+  }, [sortedSelectedFields, allFields]);
+
+  const fieldGroups: FieldListGroups<AlertField> = useMemo(() => {
+    if (!onFilterFieldList) {
+      return unfilteredFieldGroups;
+    }
+
+    return Object.fromEntries(
+      Object.entries(unfilteredFieldGroups).map(([name, group]) => [
+        name,
+        {
+          ...group,
+          fieldSearchHighlight: fieldListFilters.fieldSearchHighlight,
+          fields: group.fields.filter(onFilterFieldList),
+        },
+      ])
+    ) as FieldListGroups<AlertField>;
+  }, [unfilteredFieldGroups, onFilterFieldList, fieldListFilters.fieldSearchHighlight]);
+
+  const screenReaderDescriptionId =
+    fieldListFilters.fieldListFiltersProps.screenReaderDescriptionId;
+  const fieldListGroupedProps = useMemo(() => {
+    return {
+      fieldGroups,
+      scrollToTopResetCounter,
+      screenReaderDescriptionId,
+    };
+  }, [fieldGroups, scrollToTopResetCounter, screenReaderDescriptionId]);
+
+  return {
+    fieldListGroupedProps,
+    fieldListFiltersProps: fieldListFilters.fieldListFiltersProps,
+  };
+};
+
+const collator = new Intl.Collator(undefined, {
+  sensitivity: 'base',
+});
+
+function sortFields<T extends FieldListItem>(fieldA: T, fieldB: T) {
+  return collator.compare(fieldA.displayName || fieldA.name, fieldB.displayName || fieldB.name);
+}
 
 export const FieldBrowser = React.memo(FieldBrowserComponent);

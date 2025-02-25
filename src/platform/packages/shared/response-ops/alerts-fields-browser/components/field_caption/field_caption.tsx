@@ -8,31 +8,31 @@
  */
 
 import React from 'react';
-import { EuiHighlight, EuiText, useEuiTheme } from '@elastic/eui';
+import { EuiHighlight, EuiText, EuiToolTip } from '@elastic/eui';
 import { css } from '@emotion/react';
 
-/** Renders a field name in it's non-dragging state */
-export const FieldName = React.memo<{
+/** Renders a field caption */
+export const FieldCaption = React.memo<{
   children: string;
   highlight?: string;
 }>(({ children, highlight = '' }) => {
-  const { euiTheme } = useEuiTheme();
   return (
-    <EuiText
-      size="xs"
-      css={css`
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        font-family: ${euiTheme.font.familyCode};
-        font-weight: ${euiTheme.font.weight.bold};
-      `}
-    >
-      <EuiHighlight data-test-subj={`field-${children}-name`} search={highlight}>
-        {children}
-      </EuiHighlight>
-    </EuiText>
+    <EuiToolTip content={children}>
+      <EuiText
+        size="xs"
+        css={css`
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        `}
+        color="subdued"
+      >
+        <EuiHighlight data-test-subj={`field-${children}-caption`} search={highlight}>
+          {children}
+        </EuiHighlight>
+      </EuiText>
+    </EuiToolTip>
   );
 });
 
-FieldName.displayName = 'FieldName';
+FieldCaption.displayName = 'FieldCaption';
