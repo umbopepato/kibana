@@ -66,6 +66,7 @@ export enum FieldsGroupNames {
 export interface FieldsGroupDetails {
   showInAccordion: boolean;
   isInitiallyOpen: boolean;
+  forceOpenWithSearchResults?: boolean;
   title: string;
   helpText?: string;
   isAffectedByGlobalFilter: boolean;

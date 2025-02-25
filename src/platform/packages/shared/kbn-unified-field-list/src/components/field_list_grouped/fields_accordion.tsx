@@ -7,7 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import React, { useMemo, Fragment } from 'react';
+import React, { useMemo, Fragment, useEffect } from 'react';
 import { i18n } from '@kbn/i18n';
 import {
   EuiText,
@@ -19,11 +19,13 @@ import {
 } from '@elastic/eui';
 import classNames from 'classnames';
 import { type DataViewField } from '@kbn/data-views-plugin/common';
+import usePrevious from 'react-use/lib/usePrevious';
 import { type FieldListItem, FieldsGroupNames, type RenderFieldItemParams } from '../../types';
 import './fields_accordion.scss';
 
 export interface FieldsAccordionProps<T extends FieldListItem> {
   initialIsOpen: boolean;
+  forceOpenWithSearchResults?: boolean;
   onToggle: (open: boolean) => void;
   id: string;
   label: string;
@@ -44,6 +46,7 @@ export interface FieldsAccordionProps<T extends FieldListItem> {
 
 function InnerFieldsAccordion<T extends FieldListItem = DataViewField>({
   initialIsOpen,
+  forceOpenWithSearchResults = false,
   onToggle,
   id,
   label,
@@ -61,6 +64,28 @@ function InnerFieldsAccordion<T extends FieldListItem = DataViewField>({
   showExistenceFetchError,
   showExistenceFetchTimeout,
 }: FieldsAccordionProps<T>) {
+  const prevFieldSearchHighlight = usePrevious(fieldSearchHighlight);
+
+  useEffect(() => {
+    // TODO revert to last state if search results are cleared?
+    if (
+      forceOpenWithSearchResults &&
+      !prevFieldSearchHighlight &&
+      !!fieldSearchHighlight &&
+      !!fieldsCount &&
+      !initialIsOpen
+    ) {
+      onToggle(true);
+    }
+  }, [
+    fieldSearchHighlight,
+    fieldsCount,
+    forceOpenWithSearchResults,
+    initialIsOpen,
+    onToggle,
+    prevFieldSearchHighlight,
+  ]);
+
   const renderButton = useMemo(() => {
     const titleClassname = classNames({
       // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -136,7 +161,7 @@ function InnerFieldsAccordion<T extends FieldListItem = DataViewField>({
 
   return (
     <EuiAccordion
-      initialIsOpen={initialIsOpen}
+      forceState={initialIsOpen ? 'open' : 'closed'}
       onToggle={onToggle}
       data-test-subj={id}
       id={id}

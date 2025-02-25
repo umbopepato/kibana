@@ -10,31 +10,32 @@
 import { mount } from 'enzyme';
 import React from 'react';
 
-import { FieldName } from './field_name';
+import { FieldCaption } from './field_caption';
 
 const timestampFieldId = '@timestamp';
+const timestampFieldCaption = 'Timestamp';
 
 const defaultProps = {
-  children: timestampFieldId,
+  children: timestampFieldCaption,
 };
 
-describe('FieldName', () => {
+describe('FieldCaption', () => {
   beforeEach(() => {
     jest.useFakeTimers({ legacyFakeTimers: true });
   });
 
-  test('it renders the field name', () => {
-    const wrapper = mount(<FieldName {...defaultProps} />);
+  test('it renders the field caption', () => {
+    const wrapper = mount(<FieldCaption {...defaultProps} />);
 
     expect(
-      wrapper.find(`[data-test-subj="field-${timestampFieldId}-name"]`).first().text()
-    ).toEqual(timestampFieldId);
+      wrapper.find(`[data-test-subj="field-${timestampFieldId}-caption"]`).first().text()
+    ).toEqual(timestampFieldCaption);
   });
 
   test('it highlights the text specified by the `highlight` prop', () => {
     const highlight = 'stamp';
 
-    const wrapper = mount(<FieldName {...{ ...defaultProps, highlight }} />);
+    const wrapper = mount(<FieldCaption {...{ ...defaultProps, highlight }} />);
 
     expect(wrapper.find('mark').first().text()).toEqual(highlight);
   });
