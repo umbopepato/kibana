@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ALERT_START } from '@kbn/rule-data-utils';
 import { SortOrder } from '@elastic/elasticsearch/lib/api/types';
 import { AlertsTable } from '@kbn/response-ops-alerts-table';
@@ -53,6 +53,15 @@ export function ObservabilityAlertsTable(props: Omit<ObservabilityAlertsTablePro
     observability,
   } = useKibana<{ observability?: ObservabilityPublicStart }>().services;
   const { observabilityRuleTypeRegistry, config } = usePluginContext();
+  const alertFieldsCustomDisplayNames = useMemo(
+    () =>
+      Object.fromEntries(
+        columns
+          .filter(({ displayAsText }) => !!displayAsText)
+          .map(({ id, displayAsText }) => [id, displayAsText!])
+      ),
+    [columns]
+  );
 
   return (
     <AlertsTable<ObservabilityAlertsTableContext>
@@ -65,6 +74,7 @@ export function ObservabilityAlertsTable(props: Omit<ObservabilityAlertsTablePro
           observabilityRuleTypeRegistry ?? observability?.observabilityRuleTypeRegistry,
         config,
       }}
+      alertFieldsCustomDisplayNames={alertFieldsCustomDisplayNames}
       renderCellValue={AlertsTableCellValue}
       renderActionsCell={AlertActions}
       renderFlyoutHeader={AlertsFlyoutHeader}

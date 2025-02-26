@@ -140,6 +140,7 @@ export interface AlertsTableProps<AC extends AdditionalContext = AdditionalConte
    * and actions column are prepended automatically)
    */
   columns?: EuiDataGridProps['columns'];
+  alertFieldsCustomDisplayNames?: Record<string, string>;
   /**
    * A boolean expression or list of ids to refine the alerts search query
    */

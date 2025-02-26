@@ -178,6 +178,7 @@ const AlertsTableContent = typedForwardRef(
       columns: initialColumns = defaultAlertsTableColumns,
       gridStyle,
       browserFields: propBrowserFields,
+      alertFieldsCustomDisplayNames,
       onUpdate,
       onLoaded,
       runtimeMappings,
@@ -264,7 +265,8 @@ const AlertsTableContent = typedForwardRef(
       storage,
       id,
       defaultColumns: initialColumns ?? DEFAULT_COLUMNS,
-      alertsFields: propBrowserFields,
+      alertFields: propBrowserFields,
+      alertFieldsCustomDisplayNames,
       http,
     });
 

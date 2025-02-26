@@ -7,33 +7,16 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import React, {
-  type MutableRefObject,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
-import {
-  EuiDataGridColumn,
-  EuiDataGridOnColumnResizeData,
-  EuiFlexGroup,
-  EuiFlexItem,
-  EuiToolTip,
-} from '@elastic/eui';
+import { type MutableRefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { EuiDataGridColumn, EuiDataGridOnColumnResizeData } from '@elastic/eui';
 import type { IStorageWrapper } from '@kbn/kibana-utils-plugin/public';
 import type { AlertField, AlertFieldCategoriesMap } from '@kbn/alerting-types';
 import { isEmpty } from 'lodash';
 import { useFetchAlertsFieldsQuery } from '@kbn/alerts-ui-shared/src/common/hooks/use_fetch_alerts_fields_query';
 import { AlertsQueryContext } from '@kbn/alerts-ui-shared/src/common/contexts/alerts_query_context';
 import type { HttpStart } from '@kbn/core-http-browser';
-import { css } from '@emotion/react';
-import { FieldIcon, getFieldIconType } from '@kbn/field-utils';
-import { FieldName } from '@kbn/response-ops-alerts-fields-browser/components/field_name';
-import { FieldCaption } from '@kbn/response-ops-alerts-fields-browser/components/field_caption';
-import { toggleColumn } from './toggle_column';
 import type { AlertsTablePersistedConfiguration } from '../components/alerts_table';
+import { toggleColumn } from './toggle_column';
 
 export interface UseColumnsArgs {
   ruleTypeIds: string[];
@@ -45,7 +28,8 @@ export interface UseColumnsArgs {
    * If this is provided, it will be used to populate the columns instead of fetching the fields
    * from the alerting APIs
    */
-  alertsFields?: AlertFieldCategoriesMap;
+  alertFields?: AlertFieldCategoriesMap;
+  alertFieldsCustomDisplayNames?: Record<string, string>;
   http: HttpStart;
 }
 
@@ -90,58 +74,19 @@ const euiColumnFactory = (
   defaultColumns: EuiDataGridColumn[]
 ): EuiDataGridColumn => {
   const defaultColumn = getColumnByColumnId(defaultColumns, columnId);
-  const { display, displayAsText, ...column } = defaultColumn ? defaultColumn : { id: columnId };
-  const field = getBrowserFieldProps(columnId, alertFieldsByCategory);
-  const displayOption = display
-    ? { display }
-    : 'name' in field
-    ? {
-        display: (
-          <EuiToolTip
-            content={
-              <EuiFlexGroup
-                gutterSize="s"
-                alignItems={!field.metadata?.short ? 'center' : 'flexStart'}
-              >
-                <EuiFlexItem grow={false}>
-                  <FieldIcon type={getFieldIconType(field)} />
-                </EuiFlexItem>
-                <EuiFlexItem
-                  css={css`
-                    min-width: 0;
-                  `}
-                >
-                  <EuiFlexGroup direction="column" gutterSize="none">
-                    <EuiFlexItem>
-                      <FieldName>{field.name}</FieldName>
-                    </EuiFlexItem>
-                    {field.metadata?.short && (
-                      <EuiFlexItem>
-                        <FieldCaption>{field.metadata?.short}</FieldCaption>
-                      </EuiFlexItem>
-                    )}
-                  </EuiFlexGroup>
-                </EuiFlexItem>
-              </EuiFlexGroup>
-            }
-          >
-            {displayAsText}
-          </EuiToolTip>
-        ),
-      }
-    : { displayAsText };
-  console.log({ displayOption });
+  const column = defaultColumn ? defaultColumn : { id: columnId };
+
+  const browserFieldsProps = getBrowserFieldProps(columnId, alertFieldsByCategory);
   return {
     ...column,
-    ...displayOption,
-    schema: fieldTypeToDataGridColumnTypeMapper(field.type),
+    schema: fieldTypeToDataGridColumnTypeMapper(browserFieldsProps.type),
   };
 };
 
 const getBrowserFieldProps = (
   columnId: string,
   alertFieldsByCategory: AlertFieldCategoriesMap
-): AlertField | { type: string } => {
+): Partial<AlertField> => {
   const defaultFieldSpec = { type: 'string' };
 
   if (!alertFieldsByCategory || Object.keys(alertFieldsByCategory).length === 0) {
@@ -175,7 +120,6 @@ const populateColumns = (
   defaultColumns: EuiDataGridColumn[]
 ): EuiDataGridColumn[] => {
   return columns.map((column: EuiDataGridColumn) => {
-    console.log({ populated: isPopulatedColumn(column), column });
     return isPopulatedColumn(column)
       ? column
       : euiColumnFactory(column.id, browserFields, defaultColumns);
@@ -217,7 +161,8 @@ export const useColumns = ({
   storage,
   id,
   defaultColumns,
-  alertsFields,
+  alertFields,
+  alertFieldsCustomDisplayNames,
   http,
 }: UseColumnsArgs): UseColumnsResp => {
   const fieldsQuery = useFetchAlertsFieldsQuery(
@@ -226,21 +171,30 @@ export const useColumns = ({
       ruleTypeIds,
     },
     {
-      enabled: !alertsFields,
+      enabled: !alertFields,
       context: AlertsQueryContext,
     }
   );
 
-  const selectedAlertsFields = useMemo<AlertFieldCategoriesMap>(
-    () => alertsFields ?? fieldsQuery.data ?? {},
-    [alertsFields, fieldsQuery.data]
-  );
+  const alertFieldsWithCustomOverrides = useMemo<AlertFieldCategoriesMap>(() => {
+    const fields = alertFields ?? fieldsQuery.data ?? {};
+    for (const category in fields) {
+      if (category in fields) {
+        for (const field in fields[category].fields) {
+          if (alertFieldsCustomDisplayNames && alertFieldsCustomDisplayNames[field]) {
+            fields[category].fields[field].displayName = alertFieldsCustomDisplayNames[field];
+          }
+        }
+      }
+    }
+    return fields;
+  }, [alertFields, alertFieldsCustomDisplayNames, fieldsQuery.data]);
 
   const [columns, setColumns] = useState<EuiDataGridColumn[]>(() => {
     let cols = storageAlertsTable.current.columns;
     // before restoring from storage, enrich the column data
-    if (alertsFields && defaultColumns) {
-      cols = populateColumns(cols, alertsFields, defaultColumns);
+    if (alertFields && defaultColumns) {
+      cols = populateColumns(cols, alertFields, defaultColumns);
     } else if (cols && cols.length === 0) {
       cols = defaultColumns;
     }
@@ -312,7 +266,7 @@ export const useColumns = ({
 
   const onToggleColumn = useCallback(
     (columnId: string): void => {
-      const column = euiColumnFactory(columnId, selectedAlertsFields, defaultColumns);
+      const column = euiColumnFactory(columnId, alertFieldsWithCustomOverrides, defaultColumns);
 
       const newColumns = toggleColumn({
         column,
@@ -328,19 +282,19 @@ export const useColumns = ({
       setVisibleColumns(newVisibleColumns);
       setColumnsAndSave(newColumns, newVisibleColumns);
     },
-    [selectedAlertsFields, columns, defaultColumns, setColumnsAndSave, visibleColumns]
+    [alertFieldsWithCustomOverrides, columns, defaultColumns, setColumnsAndSave, visibleColumns]
   );
 
   const onResetColumns = useCallback(() => {
     const populatedDefaultColumns = populateColumns(
       defaultColumns,
-      selectedAlertsFields,
+      alertFieldsWithCustomOverrides,
       defaultColumns
     );
     const newVisibleColumns = populatedDefaultColumns.map((pdc) => pdc.id);
     setVisibleColumns(newVisibleColumns);
     setColumnsAndSave(populatedDefaultColumns, newVisibleColumns);
-  }, [selectedAlertsFields, defaultColumns, setColumnsAndSave]);
+  }, [alertFieldsWithCustomOverrides, defaultColumns, setColumnsAndSave]);
 
   const onColumnResize = useCallback(
     ({ columnId, width }: EuiDataGridOnColumnResizeData) => {
@@ -376,7 +330,7 @@ export const useColumns = ({
       columns: columnsWithoutInitialWidthForLastVisibleColumn,
       visibleColumns,
       isBrowserFieldDataLoading: fieldsQuery.isLoading,
-      browserFields: selectedAlertsFields,
+      browserFields: alertFieldsWithCustomOverrides,
       onToggleColumn,
       onResetColumns,
       onChangeVisibleColumns: setColumnsByColumnIds,
@@ -387,7 +341,7 @@ export const useColumns = ({
       columnsWithoutInitialWidthForLastVisibleColumn,
       visibleColumns,
       fieldsQuery.isLoading,
-      selectedAlertsFields,
+      alertFieldsWithCustomOverrides,
       onToggleColumn,
       onResetColumns,
       setColumnsByColumnIds,

@@ -19,6 +19,7 @@ import {
 } from '@elastic/eui';
 import { css } from '@emotion/react';
 import { euiThemeVars } from '@kbn/ui-theme';
+import { EuiDataGridColumnVisibility } from '@elastic/eui/src/components/datagrid/data_grid_types';
 import { ActionsCellHost } from './actions_cell_host';
 import { ControlColumnHeaderCell } from './control_column_header_cell';
 import { CellValueHost } from './cell_value_host';
@@ -314,8 +315,12 @@ export const AlertsDataGrid = typedMemo(
       return { columns: sortingColumns, onSort };
     }, [sortingColumns, onSort]);
 
-    const columnVisibility = useMemo(() => {
-      return { visibleColumns, setVisibleColumns: onChangeVisibleColumns };
+    const columnVisibility = useMemo<EuiDataGridColumnVisibility>(() => {
+      return {
+        visibleColumns,
+        setVisibleColumns: onChangeVisibleColumns,
+        canDragAndDropColumns: true,
+      };
     }, [visibleColumns, onChangeVisibleColumns]);
 
     const styles = useMemo(

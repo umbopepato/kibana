@@ -129,7 +129,6 @@ const AlertFieldsFlyout = ({
     allFields,
     alertFieldCategories: alertFieldsByCategory,
     sortedSelectedFields,
-    getCustomFieldType: (field) => field.category,
   });
 
   return (
@@ -167,7 +166,9 @@ const AlertFieldsFlyout = ({
                   label={
                     <EuiFlexGroup
                       gutterSize="s"
-                      alignItems={!field.metadata?.short ? 'center' : 'flexStart'}
+                      alignItems={
+                        !(field.displayName || field.metadata?.short) ? 'center' : 'flexStart'
+                      }
                     >
                       <EuiFlexItem grow={false}>
                         <EuiToolTip
@@ -190,10 +191,12 @@ const AlertFieldsFlyout = ({
                           <EuiFlexItem>
                             <FieldName highlight={fieldSearchHighlight}>{field.name}</FieldName>
                           </EuiFlexItem>
-                          {field.metadata?.short && (
+                          {(!!field.displayName || field.metadata?.short) && (
                             <EuiFlexItem>
                               <FieldCaption highlight={fieldSearchHighlight}>
-                                {field.metadata?.short}
+                                {[field.displayName, field.metadata?.short]
+                                  .filter(Boolean)
+                                  .join(' - ')}
                               </FieldCaption>
                             </EuiFlexItem>
                           )}
@@ -243,7 +246,6 @@ const useGroupedFields = ({
   allFields,
   alertFieldCategories,
   sortedSelectedFields,
-  getCustomFieldType,
 }: Pick<
   GroupedFieldsParams<AlertField>,
   'allFields' | 'sortedSelectedFields' | 'getCustomFieldType'
@@ -253,7 +255,6 @@ const useGroupedFields = ({
   const fieldListFilters = useFieldFilters<AlertField>({
     allFields,
     services: { core: { docLinks: {} as any } }, // Unused
-    getCustomFieldType,
   });
 
   const onFilterFieldList = fieldListFilters.onFilterField;

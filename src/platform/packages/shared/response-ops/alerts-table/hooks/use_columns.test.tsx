@@ -209,7 +209,7 @@ describe('useColumns', () => {
       () =>
         useColumns({
           http: mockHttp,
-          alertsFields,
+          alertFields: alertsFields,
           defaultColumns,
           ruleTypeIds,
           id,

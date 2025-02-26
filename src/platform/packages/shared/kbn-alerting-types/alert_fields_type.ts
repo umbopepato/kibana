@@ -10,6 +10,7 @@
 import type { FieldDescriptorWithMetadata } from '@kbn/rule-registry-plugin/common/types';
 
 export interface AlertField extends FieldDescriptorWithMetadata {
+  displayName?: string;
   category: string;
 }
 
