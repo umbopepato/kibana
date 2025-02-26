@@ -26,16 +26,16 @@ import React, { useRef, useState, useCallback, useMemo } from 'react';
 import { AlertFieldCategoriesMap, AlertFieldCategory } from '@kbn/alerting-types';
 import type { AlertField } from '@kbn/alerting-types';
 import {
-  FieldList,
-  FieldListGrouped,
   type FieldListGroups,
   type FieldListItem,
-  GroupedFieldsParams,
-  useFieldFilters,
-  ExistenceFetchStatus,
-  FieldsGroup,
+  type GroupedFieldsParams,
+  type FieldsGroup,
 } from '@kbn/unified-field-list';
+import { FieldList } from '@kbn/unified-field-list/src/components/field_list';
+import { FieldListGrouped } from '@kbn/unified-field-list/src/components/field_list_grouped';
 import { FieldNameSearch } from '@kbn/unified-field-list/src/components/field_list_filters/field_name_search';
+import { useFieldFilters } from '@kbn/unified-field-list/src/hooks/use_field_filters';
+import { ExistenceFetchStatus } from '@kbn/unified-field-list/src/types';
 import { FieldIcon, getFieldIconType } from '@kbn/field-utils';
 import { css } from '@emotion/react';
 import { i18n } from '@kbn/i18n';
