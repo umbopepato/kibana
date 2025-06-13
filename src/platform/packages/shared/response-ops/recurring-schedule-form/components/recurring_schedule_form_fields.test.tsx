@@ -18,6 +18,7 @@ import type { RecurringSchedule } from '../types';
 import { Form, useForm } from '@kbn/es-ui-shared-plugin/static/forms/hook_form_lib';
 import { getRecurringScheduleFormSchema } from '../schemas/recurring_schedule_form_schema';
 import { RecurrenceEnd } from '../constants';
+import { Frequency } from '@kbn/rrule';
 
 const baseProps: RecurringScheduleFieldsProps = {
   startDate: '2023-03-24',
@@ -29,7 +30,7 @@ interface FormValue {
 
 const initialValue: FormValue = {
   recurringSchedule: {
-    frequency: 'CUSTOM',
+    frequency: Frequency.WEEKLY,
     ends: RecurrenceEnd.NEVER,
   },
 };
@@ -88,4 +89,17 @@ describe('RecurringScheduleForm', () => {
     await userEvent.click(btn);
     expect(await screen.findByTestId('count-field')).toBeInTheDocument();
   });
+
+  it.each([Frequency.DAILY, 'CUSTOM'] as const)(
+    'renders custom schedule if frequency = %s',
+    async (frequency) => {
+      render(
+        <TestWrapper iv={{ recurringSchedule: { frequency, ends: RecurrenceEnd.NEVER } }}>
+          <RecurringScheduleFormFields {...baseProps} />
+        </TestWrapper>
+      );
+
+      expect(await screen.findByTestId('custom-recurring-form')).toBeInTheDocument();
+    }
+  );
 });
