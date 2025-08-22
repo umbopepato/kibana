@@ -14,7 +14,6 @@ import {
   EuiFlyout,
   EuiFlyoutBody,
   EuiFlyoutHeader,
-  EuiText,
   EuiTitle,
   logicalCSS,
   useEuiTheme,
@@ -34,11 +33,13 @@ import type { DataTableRecord } from '@kbn/discover-utils';
 import { buildDataTableRecordList } from '@kbn/discover-utils';
 import { css } from '@emotion/react';
 import useObservable from 'react-use/lib/useObservable';
+import type { EsNetworkRequest } from '../../types/request';
 import { Badge } from './badge';
 import type { RenderAppParams } from '../../types/app';
 import { FilterControls } from './filter_controls';
 import { searchEsNetworkRequests } from '../apis/search_es_network_requests';
-import { asEuiThemeColorsKey } from '../utils/as_eui_theme_colors_key';
+import { EsRequestDetail } from './es_request_detail';
+import { HttpMethodBadge } from './http_method_badge';
 
 export const EsNetworkInspector = () => {
   const { services } = useKibana<RenderAppParams['services']>();
@@ -65,9 +66,11 @@ export const EsNetworkInspector = () => {
 
   // KQL bar state
   const [query, setQuery] = useState<Query>({ language: 'kuery', query: '' });
-  const [timeRange, setTimeRange] = useState<TimeRange>(() =>
-    services.data.query.timefilter.timefilter.getTime()
-  );
+  const [timeRange, setTimeRange] = useState<TimeRange>(() => ({
+    from: 'now-7d',
+    to: 'now',
+    mode: 'relative',
+  }));
 
   // Controls bar state
   const [filters, setFilters] = useState<Filter[]>([]);
@@ -77,11 +80,12 @@ export const EsNetworkInspector = () => {
   const [pageSize] = useState(100);
   const [sort, setSort] = useState<SortOrder[]>([['@timestamp', 'desc']]);
   const [columns, setColumns] = useState<string[]>([
-    'method',
-    'url',
-    'status_code',
+    'request.method',
+    'request.url',
+    'response.status_code',
+    'operation',
     'index_pattern',
-    'duration',
+    'timing.duration',
   ]);
   const [expandedDoc, setExpandedDoc] = useState<DataTableRecord>();
 
@@ -178,13 +182,21 @@ export const EsNetworkInspector = () => {
       }
 
       return (
-        <EuiFlyout onClose={() => setExpandedDoc(undefined)}>
+        <EuiFlyout onClose={() => setExpandedDoc(undefined)} aria-label="ES Request detail">
           <EuiFlyoutHeader>
             <EuiTitle>
               <h2>Request detail</h2>
             </EuiTitle>
           </EuiFlyoutHeader>
-          <EuiFlyoutBody>{JSON.stringify(hit)}</EuiFlyoutBody>
+          <EuiFlyoutBody
+            css={css`
+              .euiFlyoutBody__overflowContent {
+                height: 100%;
+              }
+            `}
+          >
+            <EsRequestDetail request={hit.raw._source! as unknown as EsNetworkRequest} />
+          </EuiFlyoutBody>
         </EuiFlyout>
       );
     },
@@ -267,40 +279,21 @@ export const EsNetworkInspector = () => {
             showTimeCol={!!dataView.timeFieldName}
             controlColumnIds={[OPEN_DETAILS]}
             customGridColumnsConfiguration={{
-              method: (props) => ({
+              'request.method': (props) => ({
                 ...props.column,
                 initialWidth: 70,
               }),
-              status_code: (props) => ({
+              'response.status_code': (props) => ({
                 ...props.column,
                 initialWidth: 90,
               }),
             }}
             externalCustomRenderers={{
-              method: (props) => {
+              'request.method': (props) => {
                 const method = props.row.flattened[props.columnId] as string;
-                const color =
-                  {
-                    GET: 'accentSecondary',
-                    POST: 'primary',
-                    PUT: 'warning',
-                    PATCH: 'risk',
-                    DELETE: 'accent',
-                  }[method] ?? 'neutral';
-                const capitalizedColor = color.charAt(0).toUpperCase() + color.slice(1);
-                return (
-                  <EuiText
-                    size="xs"
-                    css={css`
-                      font-weight: ${euiTheme.font.weight.bold};
-                      color: ${euiTheme.colors[asEuiThemeColorsKey(`text${capitalizedColor}`)]};
-                    `}
-                  >
-                    {method}
-                  </EuiText>
-                );
+                return <HttpMethodBadge method={method} />;
               },
-              status_code: (props) => {
+              'response.status_code': (props) => {
                 const statusCode: number = Number(props.row.flattened[props.columnId]);
                 return (
                   <Badge
@@ -317,6 +310,9 @@ export const EsNetworkInspector = () => {
                     {statusCode}
                   </Badge>
                 );
+              },
+              index_pattern: (props) => {
+                return <code>{props.row.flattened[props.columnId] as string}</code>;
               },
             }}
             // Data

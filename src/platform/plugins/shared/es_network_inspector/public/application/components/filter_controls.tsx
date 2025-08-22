@@ -19,7 +19,7 @@ const EMPTY_RULE_TYPE_IDS: string[] = [];
 const DEFAULT_CONTROLS: FilterControlConfig[] = [
   {
     title: 'Method',
-    fieldName: 'method.keyword',
+    fieldName: 'request.method.keyword',
     hideExclude: true,
     hideSort: true,
     placeholder: 'Filter by method',
@@ -28,7 +28,7 @@ const DEFAULT_CONTROLS: FilterControlConfig[] = [
   },
   {
     title: 'Status code',
-    fieldName: 'status_code.keyword',
+    fieldName: 'response.status_code.keyword',
     hideExclude: true,
     hideSort: true,
     placeholder: 'Filter by status code',
@@ -46,7 +46,7 @@ const DEFAULT_CONTROLS: FilterControlConfig[] = [
   },
   {
     title: 'Duration',
-    fieldName: 'duration',
+    fieldName: 'timing.duration',
     hideExclude: true,
     hideSort: true,
     hideExists: true,
