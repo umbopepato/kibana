@@ -1,0 +1,38 @@
+{
+  "type": "plugin",
+  "id": "@kbn/es-network-inspector-plugin",
+  "owner": [
+    "@elastic/kibana-management"
+  ],
+  "group": "platform",
+  "visibility": "shared",
+  "plugin": {
+    "id": "esRequestsLog",
+    "browser": true,
+    "server": false,
+    "configPath": [
+      "es_network_inspector"
+    ],
+    "requiredPlugins": [
+      "devTools",
+      "dataViews",
+      "data",
+      "unifiedSearch",
+      "controls",
+      "uiActions",
+      "unifiedSearch",
+      "fieldFormats",
+      "dataViewFieldEditor",
+      "spaces"
+    ],
+    "optionalPlugins": [
+      "home",
+      "cloud",
+      "licensing"
+    ],
+    "requiredBundles": [
+      "kibanaUtils",
+      "kibanaReact"
+    ]
+  }
+}

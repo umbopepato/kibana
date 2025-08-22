@@ -5857,6 +5857,10 @@
   version "0.0.0"
   uid ""
 
+"@kbn/es-network-inspector-plugin@link:src/platform/plugins/shared/es_network_inspector":
+  version "0.0.0"
+  uid ""
+
 "@kbn/es-query-server@link:src/platform/packages/shared/kbn-es-query-server":
   version "0.0.0"
   uid ""
