@@ -12,6 +12,7 @@ import {
   EuiFieldText,
   EuiFlexGroup,
   EuiFlexItem,
+  EuiIcon,
   EuiPanel,
   EuiTab,
   EuiTabs,
@@ -24,6 +25,7 @@ import { ConnectingLine } from './connecting_line';
 import { HttpMethodBadge } from './http_method_badge';
 import type { EsNetworkRequest } from '../../types/request';
 import { Body } from './body';
+import { Headers } from './headers';
 
 export interface EsRequestDetailProps {
   request: EsNetworkRequest;
@@ -44,7 +46,7 @@ export const EsRequestDetail = ({ request }: EsRequestDetailProps) => {
     if (selectedRequestTab === Tab.BODY) {
       return <Body type="request" request={request} />;
     } else if (selectedRequestTab === Tab.HEADERS) {
-      return <div>Request Headers</div>;
+      return <Headers type="request" request={request} />;
     }
     return null;
   }, [request, selectedRequestTab]);
@@ -53,7 +55,7 @@ export const EsRequestDetail = ({ request }: EsRequestDetailProps) => {
     if (selectedResponseTab === Tab.BODY) {
       return <Body type="response" request={request} />;
     } else if (selectedResponseTab === Tab.HEADERS) {
-      return <div>Response Headers</div>;
+      return <Headers type="response" request={request} />;
     }
     return null;
   }, [request, selectedResponseTab]);
@@ -72,35 +74,81 @@ export const EsRequestDetail = ({ request }: EsRequestDetailProps) => {
     >
       <EuiFlexItem grow={false}>
         <EuiFieldText
-          value={request['request.url']}
-          prepend={<HttpMethodBadge method={request['request.method']} />}
+          value={request.request.url}
+          prepend={<HttpMethodBadge method={request.request.method} />}
           fullWidth
+          compressed
         />
       </EuiFlexItem>
-      <EuiFlexItem grow>
-        <EuiPanel hasShadow={false} hasBorder paddingSize="none">
+      <EuiFlexItem
+        css={css`
+          flex: 1;
+          min-height: 0;
+        `}
+      >
+        <EuiPanel hasShadow={false} hasBorder paddingSize="none" css={{ height: '100%' }}>
           <EuiFlexGroup direction="column" gutterSize="none" css={{ height: '100%' }}>
             <EuiFlexItem grow={false}>
-              <EuiTabs>
-                <EuiTab
-                  isSelected={selectedRequestTab === Tab.BODY}
-                  onClick={() => setSelectedRequestTab(Tab.BODY)}
-                >
-                  Body
-                </EuiTab>
-                <EuiTab
-                  isSelected={selectedRequestTab === Tab.HEADERS}
-                  onClick={() => setSelectedRequestTab(Tab.HEADERS)}
-                >
-                  Headers
-                </EuiTab>
-              </EuiTabs>
+              <EuiFlexGroup gutterSize="none">
+                <EuiFlexItem grow>
+                  <EuiTabs size="s">
+                    <EuiTab
+                      isSelected={selectedRequestTab === Tab.BODY}
+                      onClick={() => setSelectedRequestTab(Tab.BODY)}
+                    >
+                      Body
+                    </EuiTab>
+                    <EuiTab
+                      isSelected={selectedRequestTab === Tab.HEADERS}
+                      onClick={() => setSelectedRequestTab(Tab.HEADERS)}
+                    >
+                      Headers
+                    </EuiTab>
+                  </EuiTabs>
+                </EuiFlexItem>
+                <EuiFlexItem grow={false}>
+                  <EuiFlexGroup
+                    alignItems="center"
+                    gutterSize="none"
+                    css={css`
+                      align-self: stretch;
+                      border-bottom: ${euiTheme.border.thin};
+                      ${logicalCSS('padding-right', euiTheme.size.s)}
+                    `}
+                  >
+                    <EuiFlexItem grow={false}>
+                      <EuiIcon type="sortUp" color="subdued" />
+                    </EuiFlexItem>
+                    <EuiFlexItem grow={false}>
+                      <EuiText
+                        size="xs"
+                        color="subdued"
+                        css={css`
+                          ${logicalCSS('margin-left', euiTheme.size.s)}
+                          user-select: none;
+                          font-weight: ${euiTheme.font.weight.semiBold};
+                        `}
+                      >
+                        Request
+                      </EuiText>
+                    </EuiFlexItem>
+                  </EuiFlexGroup>
+                </EuiFlexItem>
+              </EuiFlexGroup>
             </EuiFlexItem>
 
-            <EuiFlexItem grow>{requestTabContent}</EuiFlexItem>
+            <EuiFlexItem
+              css={css`
+                flex: 1;
+                min-height: 0;
+              `}
+            >
+              {requestTabContent}
+            </EuiFlexItem>
           </EuiFlexGroup>
         </EuiPanel>
       </EuiFlexItem>
+
       <EuiFlexItem
         grow={false}
         css={css`
@@ -116,31 +164,80 @@ export const EsRequestDetail = ({ request }: EsRequestDetailProps) => {
             <EuiText size="xs" color="subdued">
               Fired at {new Date(request['@timestamp']).toLocaleString()}
               <br />
-              Took {request['timing.duration']} ms
-              <br />
-              Ended at {new Date(request['timing.response_complete']).toLocaleString()}
+              Took {request.duration} ms
             </EuiText>
           </EuiFlexItem>
         </EuiFlexGroup>
       </EuiFlexItem>
-      <EuiFlexItem grow>
-        <EuiPanel hasShadow={false} hasBorder paddingSize="none">
-          <EuiTabs>
-            <EuiTab
-              isSelected={selectedResponseTab === Tab.BODY}
-              onClick={() => setSelectedResponseTab(Tab.BODY)}
-            >
-              Body
-            </EuiTab>
-            <EuiTab
-              isSelected={selectedResponseTab === Tab.HEADERS}
-              onClick={() => setSelectedResponseTab(Tab.HEADERS)}
-            >
-              Headers
-            </EuiTab>
-          </EuiTabs>
 
-          {responseTabContent}
+      <EuiFlexItem
+        css={css`
+          flex: 1;
+          min-height: 0;
+        `}
+      >
+        <EuiPanel hasShadow={false} hasBorder paddingSize="none" css={{ height: '100%' }}>
+          <EuiFlexGroup direction="column" gutterSize="none" css={{ height: '100%' }}>
+            <EuiFlexItem grow={false}>
+              <EuiFlexItem grow={false}>
+                <EuiFlexGroup gutterSize="none">
+                  <EuiFlexItem grow>
+                    <EuiTabs size="s">
+                      <EuiTab
+                        isSelected={selectedResponseTab === Tab.BODY}
+                        onClick={() => setSelectedResponseTab(Tab.BODY)}
+                      >
+                        Body
+                      </EuiTab>
+                      <EuiTab
+                        isSelected={selectedResponseTab === Tab.HEADERS}
+                        onClick={() => setSelectedResponseTab(Tab.HEADERS)}
+                      >
+                        Headers
+                      </EuiTab>
+                    </EuiTabs>
+                  </EuiFlexItem>
+                  <EuiFlexItem grow={false}>
+                    <EuiFlexGroup
+                      alignItems="center"
+                      gutterSize="none"
+                      css={css`
+                        align-self: stretch;
+                        border-bottom: ${euiTheme.border.thin};
+                        ${logicalCSS('padding-right', euiTheme.size.s)}
+                      `}
+                    >
+                      <EuiFlexItem grow={false}>
+                        <EuiIcon type="sortDown" color="subdued" />
+                      </EuiFlexItem>
+                      <EuiFlexItem grow={false}>
+                        <EuiText
+                          size="xs"
+                          color="subdued"
+                          css={css`
+                            ${logicalCSS('margin-left', euiTheme.size.s)}
+                            user-select: none;
+                            font-weight: ${euiTheme.font.weight.semiBold};
+                          `}
+                        >
+                          Response
+                        </EuiText>
+                      </EuiFlexItem>
+                    </EuiFlexGroup>
+                  </EuiFlexItem>
+                </EuiFlexGroup>
+              </EuiFlexItem>
+            </EuiFlexItem>
+
+            <EuiFlexItem
+              css={css`
+                flex: 1;
+                min-height: 0;
+              `}
+            >
+              {responseTabContent}
+            </EuiFlexItem>
+          </EuiFlexGroup>
         </EuiPanel>
       </EuiFlexItem>
     </EuiFlexGroup>

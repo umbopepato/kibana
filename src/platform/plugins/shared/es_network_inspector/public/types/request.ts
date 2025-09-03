@@ -10,29 +10,34 @@
 export interface EsNetworkRequest {
   // Time field
   '@timestamp': string;
+  duration: number;
 
   // Request
-  'request.method': string;
-  'request.url': string;
-  'request.headers': Record<string, string>;
-  'request.body'?: string;
-  'request.body_size_bytes': number;
+  request: {
+    method: string;
+    url: string;
+    headers: Record<string, string>;
+    body?: string;
+    body_size_bytes: number;
+  };
 
   // Response
-  'response.status_code': string;
-  'response.headers': Record<string, string>;
-  'response.body'?: string;
-  'response.body_size_bytes': number;
+  response: {
+    status_code: string;
+    headers: Record<string, string>;
+    body?: string;
+    body_size_bytes: number;
+  };
 
   // Timing
-  'timing.client_connection_established': string;
-  'timing.first_response_byte': string;
-  'timing.first_request_byte': string;
-  'timing.request_complete': string;
-  'timing.response_complete': string;
-  'timing.server_connection_initiated': string;
-  'timing.server_connection_tcp_handshake': string;
-  'timing.duration': number;
+  // 'timing.client_connection_established': string;
+  // 'timing.first_response_byte': string;
+  // 'timing.first_request_byte': string;
+  // 'timing.request_complete': string;
+  // 'timing.response_complete': string;
+  // 'timing.server_connection_initiated': string;
+  // 'timing.server_connection_tcp_handshake': string;
+  // 'timing.duration': number;
 
   // Operation
   index_pattern?: string;

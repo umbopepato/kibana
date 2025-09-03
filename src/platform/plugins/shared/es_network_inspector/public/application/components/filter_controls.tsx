@@ -19,7 +19,7 @@ const EMPTY_RULE_TYPE_IDS: string[] = [];
 const DEFAULT_CONTROLS: FilterControlConfig[] = [
   {
     title: 'Method',
-    fieldName: 'request.method.keyword',
+    fieldName: 'request.method',
     hideExclude: true,
     hideSort: true,
     placeholder: 'Filter by method',
@@ -46,7 +46,7 @@ const DEFAULT_CONTROLS: FilterControlConfig[] = [
   },
   {
     title: 'Duration',
-    fieldName: 'timing.duration',
+    fieldName: 'duration',
     hideExclude: true,
     hideSort: true,
     hideExists: true,

@@ -41,28 +41,13 @@ import { searchEsNetworkRequests } from '../apis/search_es_network_requests';
 import { EsRequestDetail } from './es_request_detail';
 import { HttpMethodBadge } from './http_method_badge';
 
-export const EsNetworkInspector = () => {
+export const EsNetworkInspector = ({ dataView }: { dataView: DataView }) => {
   const { services } = useKibana<RenderAppParams['services']>();
   const { euiTheme } = useEuiTheme();
   const activeSpaceId = useObservable(
     services.spaces.getActiveSpace$().pipe(map(({ id }) => id)),
     undefined
   );
-
-  // DataView loading
-  const [dataView, setDataView] = useState<DataView>();
-
-  useEffect(() => {
-    let mounted = true;
-    services.dataViews.getDefault().then((dv: DataView | null) => {
-      if (mounted && dv) {
-        setDataView(dv);
-      }
-    });
-    return () => {
-      mounted = false;
-    };
-  }, [services.dataViews]);
 
   // KQL bar state
   const [query, setQuery] = useState<Query>({ language: 'kuery', query: '' });
@@ -85,7 +70,7 @@ export const EsNetworkInspector = () => {
     'response.status_code',
     'operation',
     'index_pattern',
-    'timing.duration',
+    'duration',
   ]);
   const [expandedDoc, setExpandedDoc] = useState<DataTableRecord>();
 
@@ -282,6 +267,10 @@ export const EsNetworkInspector = () => {
               'request.method': (props) => ({
                 ...props.column,
                 initialWidth: 70,
+              }),
+              'request.url': (props) => ({
+                ...props.column,
+                initialWidth: 550,
               }),
               'response.status_code': (props) => ({
                 ...props.column,

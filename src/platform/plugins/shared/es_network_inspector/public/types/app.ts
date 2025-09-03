@@ -10,12 +10,14 @@
 import type { RouteComponentProps } from 'react-router-dom';
 import type { Storage } from '@kbn/kibana-utils-plugin/public';
 import type { CoreStart } from '@kbn/core-lifecycle-browser';
+import type { DataView } from '@kbn/data-views-plugin/common';
 import type { PublicStartDependencies } from './plugin_dependencies';
 
 export interface RenderAppParams {
   element: HTMLElement;
   history: RouteComponentProps['history'];
   isDevMode: boolean;
+  networkInspectorDataView: DataView;
   services: {
     storage: Storage;
   } & PublicStartDependencies &

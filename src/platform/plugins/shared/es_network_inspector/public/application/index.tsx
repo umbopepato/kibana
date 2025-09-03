@@ -23,12 +23,12 @@ const queryClient = new QueryClient({
   },
 });
 
-export async function renderApp({ element, services }: RenderAppParams) {
+export async function renderApp({ element, services, networkInspectorDataView }: RenderAppParams) {
   render(
     services.rendering.addContext(
       <KibanaContextProvider services={services}>
         <QueryClientProvider client={queryClient}>
-          <EsNetworkInspector />
+          <EsNetworkInspector dataView={networkInspectorDataView} />
         </QueryClientProvider>
       </KibanaContextProvider>
     ),

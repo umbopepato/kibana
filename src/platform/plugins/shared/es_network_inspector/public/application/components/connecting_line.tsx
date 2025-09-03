@@ -25,7 +25,7 @@ export const ConnectingLine = () => {
         css={css`
           border-left: 2px solid ${euiTheme.colors.borderBaseSubdued};
           width: 0;
-          height: 5rem;
+          height: 3.5rem;
           margin-left: 2px;
         `}
       />
