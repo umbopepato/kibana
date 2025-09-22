@@ -36,7 +36,7 @@ export interface PanelHeaderProps extends React.ComponentProps<typeof EuiFlyoutH
 
 export const PanelHeader: FC<PanelHeaderProps> = memo(
   ({ selectedTabId, setSelectedTabId, tabs, ...flyoutHeaderProps }) => {
-    const { dataFormattedForFieldBrowser } = useDocumentDetailsContext();
+    const { dataFormattedForFieldBrowser, ...rest } = useDocumentDetailsContext();
     const { isAlert } = useBasicDataFromDetailsData(dataFormattedForFieldBrowser);
     const onSelectedTabChanged = (id: RightPanelPaths) => setSelectedTabId(id);
 
