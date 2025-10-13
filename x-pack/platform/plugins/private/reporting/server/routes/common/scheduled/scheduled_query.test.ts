@@ -1299,6 +1299,18 @@ describe('scheduledQueryFactory', () => {
   });
 
   describe('bulkDelete', () => {
+    beforeEach(() => {
+      soClient.bulkGet = jest.fn().mockImplementation(async () => ({
+        saved_objects: savedObjects.map((so) => ({
+          ...so,
+          attributes: {
+            ...so.attributes,
+            enabled: false,
+          },
+        })),
+      }));
+    });
+
     it('should pass parameters in the request body', async () => {
       const result = await scheduledQuery.bulkDelete(
         mockLogger,
@@ -1469,6 +1481,85 @@ describe('scheduledQueryFactory', () => {
       });
     });
 
+    it('should not delete enabled scheduled reports', async () => {
+      soClient.bulkGet = jest.fn().mockImplementationOnce(async () => ({
+        saved_objects: savedObjects,
+      }));
+
+      const result = await scheduledQuery.bulkDelete(
+        mockLogger,
+        fakeRawRequest,
+        mockResponseFactory,
+        ['aa8b6fb3-cf61-4903-bce3-eec9ddc823ca', '2da1cb75-04c7-4202-a9f0-f8bcce63b0f4'],
+        { username: 'elastic' }
+      );
+
+      expect(soClient.bulkGet).toHaveBeenCalledTimes(1);
+      expect(soClient.bulkGet).toHaveBeenCalledWith([
+        { id: 'aa8b6fb3-cf61-4903-bce3-eec9ddc823ca', type: 'scheduled_report' },
+        { id: '2da1cb75-04c7-4202-a9f0-f8bcce63b0f4', type: 'scheduled_report' },
+      ]);
+      expect(soClient.bulkDelete).not.toHaveBeenCalled();
+      expect(taskManager.bulkRemove).not.toHaveBeenCalled();
+
+      expect(result).toEqual({
+        scheduled_report_ids: [],
+        errors: [
+          'aa8b6fb3-cf61-4903-bce3-eec9ddc823ca',
+          '2da1cb75-04c7-4202-a9f0-f8bcce63b0f4',
+        ].map((id) => ({
+          id,
+          message: `Cannot delete an enabled scheduled report. Please disable the scheduled report before deleting.`,
+          status: 400,
+        })),
+        total: 2,
+      });
+
+      expect(auditLogger.log).toHaveBeenCalledTimes(2);
+      expect(auditLogger.log).toHaveBeenNthCalledWith(1, {
+        error: {
+          code: 'Error',
+          message: 'Scheduled report not disabled before deletion.',
+        },
+        event: {
+          action: 'scheduled_report_delete',
+          category: ['database'],
+          outcome: 'failure',
+          type: ['deletion'],
+        },
+        kibana: {
+          saved_object: {
+            id: 'aa8b6fb3-cf61-4903-bce3-eec9ddc823ca',
+            name: '[Logs] Web Traffic',
+            type: 'scheduled_report',
+          },
+        },
+        message:
+          'Failed attempt to delete scheduled report [id=aa8b6fb3-cf61-4903-bce3-eec9ddc823ca] [name=[Logs] Web Traffic]',
+      });
+      expect(auditLogger.log).toHaveBeenNthCalledWith(2, {
+        error: {
+          code: 'Error',
+          message: 'Scheduled report not disabled before deletion.',
+        },
+        event: {
+          action: 'scheduled_report_delete',
+          category: ['database'],
+          outcome: 'failure',
+          type: ['deletion'],
+        },
+        kibana: {
+          saved_object: {
+            id: '2da1cb75-04c7-4202-a9f0-f8bcce63b0f4',
+            name: 'Another cool dashboard',
+            type: 'scheduled_report',
+          },
+        },
+        message:
+          'Failed attempt to delete scheduled report [id=2da1cb75-04c7-4202-a9f0-f8bcce63b0f4] [name=Another cool dashboard]',
+      });
+    });
+
     it('should handle errors in bulk get', async () => {
       soClient.bulkGet = jest.fn().mockImplementationOnce(async () => ({
         saved_objects: [
@@ -1482,7 +1573,13 @@ describe('scheduledQueryFactory', () => {
               statusCode: 404,
             },
           },
-          savedObjects[1],
+          {
+            ...savedObjects[1],
+            attributes: {
+              ...savedObjects[1].attributes,
+              enabled: false,
+            },
+          },
         ],
       }));
       soClient.bulkDelete = jest.fn().mockImplementation(async () => ({

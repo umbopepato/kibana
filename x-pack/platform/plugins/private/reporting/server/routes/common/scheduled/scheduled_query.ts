@@ -442,6 +442,23 @@ export function scheduledQueryFactory(reportingCore: ReportingCore): ScheduledQu
               status: so.error.statusCode,
               id: so.id,
             });
+          } else if (Boolean(so.attributes.enabled)) {
+            bulkErrors.push({
+              message: `Cannot delete an enabled scheduled report. Please disable the scheduled report before deleting.`,
+              status: 400,
+              id: so.id,
+            });
+            auditLogger.log(
+              scheduledReportAuditEvent({
+                action: ScheduledReportAuditAction.DELETE,
+                savedObject: {
+                  type: SCHEDULED_REPORT_SAVED_OBJECT_TYPE,
+                  id: so.id,
+                  name: so?.attributes?.title,
+                },
+                error: new Error(`Scheduled report not disabled before deletion.`),
+              })
+            );
           } else {
             // check if user is allowed to delete this scheduled report
             if (so.attributes.createdBy !== username && !canManageReporting) {

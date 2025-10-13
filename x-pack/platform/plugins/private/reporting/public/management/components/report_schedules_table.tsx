@@ -268,6 +268,7 @@ export const ReportSchedulesTable = (props: { apiClient: ReportingAPIClient }) =
           type: 'icon',
           icon: 'trash',
           onClick: (item) => setReportAndOpenDeleteModal(item),
+          available: (item) => !Boolean(item.enabled),
         },
       ],
     },
