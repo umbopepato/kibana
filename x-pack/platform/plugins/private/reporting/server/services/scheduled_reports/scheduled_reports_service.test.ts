@@ -1073,12 +1073,31 @@ describe('ScheduledReportsService', () => {
       expect(taskManager.bulkDisable).toHaveBeenCalledTimes(1);
       // TM still called with both in case the task was not disabled
       expect(taskManager.bulkDisable).toHaveBeenCalledWith([
-        '2da1cb75-04c7-4202-a9f0-f8bcce63b0f4',
         'aa8b6fb3-cf61-4903-bce3-eec9ddc823ca',
+        '2da1cb75-04c7-4202-a9f0-f8bcce63b0f4',
       ]);
 
-      expect(auditLogger.log).toHaveBeenCalledTimes(1);
+      expect(auditLogger.log).toHaveBeenCalledTimes(2);
       expect(auditLogger.log).toHaveBeenNthCalledWith(1, {
+        error: undefined,
+        event: {
+          action: 'scheduled_report_disable',
+          category: ['database'],
+          outcome: 'unknown',
+          type: ['change'],
+        },
+        kibana: {
+          saved_object: {
+            id: 'aa8b6fb3-cf61-4903-bce3-eec9ddc823ca',
+            name: '[Logs] Web Traffic',
+            type: 'scheduled_report',
+          },
+        },
+        message:
+          'User is disabling scheduled report [id=aa8b6fb3-cf61-4903-bce3-eec9ddc823ca] [name=[Logs] Web Traffic]',
+      });
+      expect(auditLogger.log).toHaveBeenNthCalledWith(2, {
+        error: undefined,
         event: {
           action: 'scheduled_report_disable',
           category: ['database'],
@@ -1581,7 +1600,7 @@ describe('ScheduledReportsService', () => {
             id: 'aa8b6fb3-cf61-4903-bce3-eec9ddc823ca',
             type: 'scheduled_report',
             success: false,
-            error: { error: 'Conflict', message: 'Error updating saved object', statusCode: 409 },
+            error: { error: 'Conflict', message: 'Error deleting saved object', statusCode: 409 },
           },
         ],
       }));
@@ -1616,7 +1635,7 @@ describe('ScheduledReportsService', () => {
       expect(auditLogger.log).toHaveBeenNthCalledWith(3, {
         error: {
           code: 'Error',
-          message: 'Error updating saved object',
+          message: 'Error deleting saved object',
         },
         event: {
           action: 'scheduled_report_delete',
@@ -1627,6 +1646,7 @@ describe('ScheduledReportsService', () => {
         kibana: {
           saved_object: {
             id: 'aa8b6fb3-cf61-4903-bce3-eec9ddc823ca',
+            name: undefined,
             type: 'scheduled_report',
           },
         },
@@ -1639,7 +1659,7 @@ describe('ScheduledReportsService', () => {
         errors: [
           {
             id: 'aa8b6fb3-cf61-4903-bce3-eec9ddc823ca',
-            message: 'Error updating saved object',
+            message: 'Error deleting saved object',
             status: 409,
           },
         ],
