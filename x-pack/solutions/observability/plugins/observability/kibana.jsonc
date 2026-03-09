@@ -41,7 +41,8 @@
       "esql",
       "savedObjectsTagging",
       "streams",
-      "kql"
+      "kql",
+      "alertingVTwo"
     ],
     "optionalPlugins": [
       "observabilityAgentBuilder",

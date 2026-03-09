@@ -19,6 +19,7 @@ import type { LazyObservabilityPageTemplateProps } from '@kbn/observability-shar
 import { KibanaContextProvider } from '@kbn/kibana-react-plugin/public';
 import { KibanaThemeProvider } from '@kbn/react-kibana-context-theme';
 import { RedirectAppLinks } from '@kbn/shared-ux-link-redirect-app';
+import { Context } from '@kbn/core-di-browser';
 import { Storage } from '@kbn/kibana-utils-plugin/public';
 import type { UsageCollectionSetup } from '@kbn/usage-collection-plugin/public';
 import PageNotFound from '../pages/404';
@@ -86,52 +87,60 @@ export const renderApp = ({
   const ApplicationUsageTrackingProvider =
     usageCollection?.components.ApplicationUsageTrackingProvider ?? React.Fragment;
   const CloudProvider = plugins.cloud?.CloudContextProvider ?? React.Fragment;
+  const container = core.injection.getContainer();
+
+  console.log('>>>>Rendering o11y app with container', container);
 
   ReactDOM.render(
-    <KibanaRenderContextProvider {...core}>
-      <ApplicationUsageTrackingProvider>
-        <KibanaThemeProvider {...{ theme: { theme$ } }}>
-          <CloudProvider>
-            <KibanaContextProvider
-              services={{
-                ...core,
-                ...plugins,
-                storage: new Storage(localStorage),
-                isDev,
-                kibanaVersion,
-                isServerless,
-                telemetryClient,
-              }}
-            >
-              <PluginContext.Provider
-                value={{
+    <Context.Provider value={container}>
+      <KibanaRenderContextProvider {...core}>
+        <ApplicationUsageTrackingProvider>
+          <KibanaThemeProvider {...{ theme: { theme$ } }}>
+            <CloudProvider>
+              <KibanaContextProvider
+                services={{
+                  ...core,
+                  ...plugins,
+                  storage: new Storage(localStorage),
                   isDev,
-                  config,
-                  appMountParameters,
-                  observabilityRuleTypeRegistry,
-                  ObservabilityPageTemplate,
+                  kibanaVersion,
+                  isServerless,
+                  telemetryClient,
                 }}
               >
-                <Router history={history}>
-                  <EuiThemeProvider darkMode={isDarkMode}>
-                    <RedirectAppLinks coreStart={core} data-test-subj="observabilityMainContainer">
-                      <PerformanceContextProvider>
-                        <QueryClientProvider client={queryClient}>
-                          <InspectorContextProvider>
-                            <App />
-                            <HideableReactQueryDevTools />
-                          </InspectorContextProvider>
-                        </QueryClientProvider>
-                      </PerformanceContextProvider>
-                    </RedirectAppLinks>
-                  </EuiThemeProvider>
-                </Router>
-              </PluginContext.Provider>
-            </KibanaContextProvider>
-          </CloudProvider>
-        </KibanaThemeProvider>
-      </ApplicationUsageTrackingProvider>
-    </KibanaRenderContextProvider>,
+                <PluginContext.Provider
+                  value={{
+                    isDev,
+                    config,
+                    appMountParameters,
+                    observabilityRuleTypeRegistry,
+                    ObservabilityPageTemplate,
+                  }}
+                >
+                  <Router history={history}>
+                    <EuiThemeProvider darkMode={isDarkMode}>
+                      <RedirectAppLinks
+                        coreStart={core}
+                        data-test-subj="observabilityMainContainer"
+                      >
+                        <PerformanceContextProvider>
+                          <QueryClientProvider client={queryClient}>
+                            <InspectorContextProvider>
+                              <App />
+                              <HideableReactQueryDevTools />
+                            </InspectorContextProvider>
+                          </QueryClientProvider>
+                        </PerformanceContextProvider>
+                      </RedirectAppLinks>
+                    </EuiThemeProvider>
+                  </Router>
+                </PluginContext.Provider>
+              </KibanaContextProvider>
+            </CloudProvider>
+          </KibanaThemeProvider>
+        </ApplicationUsageTrackingProvider>
+      </KibanaRenderContextProvider>
+    </Context.Provider>,
     element
   );
   return () => {

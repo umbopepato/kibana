@@ -84,6 +84,7 @@ import type { ObservabilityAgentBuilderPluginPublicStart } from '@kbn/observabil
 import { observabilityAppId, observabilityFeatureId } from '../common';
 import {
   ALERTS_PATH,
+  ALERTING_V2_PATH,
   CASES_PATH,
   OBSERVABILITY_BASE_PATH,
   OVERVIEW_PATH,
@@ -221,6 +222,14 @@ export class Plugin
             defaultMessage: 'Rules',
           }),
           path: RULES_PATH,
+          visibleIn: [],
+        },
+        {
+          id: 'alerts_v2',
+          title: i18n.translate('xpack.observability.alertsV2LinkTitle', {
+            defaultMessage: 'Alerts v2',
+          }),
+          path: ALERTING_V2_PATH,
           visibleIn: [],
         },
       ],

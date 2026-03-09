@@ -41,3 +41,5 @@ export const module = new ContainerModule(({ bind }) => {
     });
   });
 });
+
+export { useFetchRules } from './hooks/use_fetch_rules';

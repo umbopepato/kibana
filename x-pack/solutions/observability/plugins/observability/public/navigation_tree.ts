@@ -14,6 +14,7 @@ import { AIChatExperience } from '@kbn/ai-assistant-common';
 import { AI_CHAT_EXPERIENCE_TYPE } from '@kbn/management-settings-ids';
 import type { Location } from 'history';
 import type { ObservabilityPublicPluginsStart } from './plugin';
+
 const title = i18n.translate(
   'xpack.observability.obltNav.headerSolutionSwitcher.obltSolutionTitle',
   {
@@ -75,8 +76,20 @@ function createNavTree({
         link: 'workflows',
       },
       {
-        link: 'observability-overview:alerts',
+        id: 'alerting',
+        renderAs: 'panelOpener',
+        title: i18n.translate('xpack.observability.obltNav.alerts', {
+          defaultMessage: 'Alerts',
+        }),
         icon: 'warning',
+        children: [
+          {
+            link: 'observability-overview:alerts',
+          },
+          {
+            link: 'observability-overview:alerts_v2',
+          },
+        ],
       },
       {
         link: 'observability-overview:cases',
