@@ -197,8 +197,9 @@ const addSeverityFilter = (query: ComposerQuery, severities: string[]) => {
 /**
  * Applies the filters that must run after the aggregations: they either read
  * columns the aggregations compute (tags, severity, assignee) or must only
- * narrow the aggregated rows (status). `ruleId`, `groupHash` and `queryString`
- * are applied before the aggregations by `buildEpisodesBaseQuery` instead.
+ * narrow the aggregated rows (status). `ruleId` and `groupHash` are applied
+ * before the aggregations by `buildEpisodesBaseQuery` instead. `queryString`
+ * runs after aggregation so episode fields describe the latest state.
  */
 export const applyFilterState = (query: ComposerQuery, filterState: EpisodesFilterState): void => {
   if (filterState.status?.length) {
@@ -254,21 +255,17 @@ export const buildEpisodesBaseQuery = (
     query.where`group_hash == ${filterState.groupHash}`;
   }
 
-  const trimmedSearch = filterState?.queryString?.trim();
-  if (trimmedSearch) {
-    query.pipe(
-      `WHERE ((type == "alert" AND KQL(${escapeStringValue(
-        trimmedSearch
-      )})) OR (action_type IN ("snooze", "unsnooze", "tag", "ack", "unack", "assign")))`
-    );
-  } else {
-    query.where`type == "alert" OR action_type IN ("snooze", "unsnooze", "tag", "ack", "unack", "assign")`;
-  }
+  query.where`type == "alert" OR action_type IN ("snooze", "unsnooze", "tag", "ack", "unack", "assign")`;
 
   addGroupHashActionStats(query);
   addEpisodeIdActionStats(query);
   query.where`type == "alert"`;
   addEpisodeAggregation(query);
+
+  const trimmedSearch = filterState?.queryString?.trim();
+  if (trimmedSearch) {
+    query.pipe(`WHERE KQL(${escapeStringValue(trimmedSearch)})`);
+  }
 
   return query;
 };

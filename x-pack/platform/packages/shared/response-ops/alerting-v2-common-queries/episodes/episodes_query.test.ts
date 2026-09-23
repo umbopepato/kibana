@@ -281,6 +281,9 @@ describe('buildEpisodesQuery', () => {
     const queryString = query.print('basic');
 
     expect(queryString).toContain('KQL("alert.name: \\"test\\"")');
+    expect(queryString.indexOf('KQL(')).toBeGreaterThan(
+      queryString.indexOf('WHERE @timestamp == last_timestamp')
+    );
   });
 
   it('should keep KQL input inside the ES|QL string literal', () => {

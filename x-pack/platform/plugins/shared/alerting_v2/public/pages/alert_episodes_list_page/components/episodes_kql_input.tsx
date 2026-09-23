@@ -7,7 +7,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { DataView } from '@kbn/data-views-plugin/common';
-import { fromKueryExpression, type Query } from '@kbn/es-query';
+import type { Query } from '@kbn/es-query';
 import type { KqlPluginStart, SuggestionsAbstraction } from '@kbn/kql/public';
 import { useService } from '@kbn/core-di-browser';
 import { PluginStart } from '@kbn/core-di';
@@ -15,6 +15,7 @@ import type { HttpStart } from '@kbn/core-http-browser';
 import { ALERTING_V2_INTERNAL_SUGGESTIONS_RULE_EVENT_FIELDS_API_PATH } from '@kbn/alerting-v2-constants';
 import { useAdditionalEpisodesDataSource } from '@kbn/alerting-v2-episodes-ui/context/episode_data_source_context';
 import type { EpisodeSearchField } from '@kbn/alerting-v2-episodes-ui/types/episode_data_source';
+import { isValidKql } from '../utils/episodes_query_filter';
 
 interface EpisodesKqlInputProps {
   value: string;
@@ -42,15 +43,6 @@ const EPISODE_BASE_FIELDS: EpisodeSearchField[] = [
 const episodesSearchSuggestionsAbstraction: SuggestionsAbstraction = {
   type: 'alerting/v2',
   fields: {},
-};
-
-const isValidKql = (value: string): boolean => {
-  try {
-    fromKueryExpression(value);
-    return true;
-  } catch {
-    return false;
-  }
 };
 
 export const EpisodesKqlInput = ({

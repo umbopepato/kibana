@@ -77,6 +77,7 @@ import { dataTableRecordToEpisode } from './utils/data_table_record_to_episode';
 import { useEpisodesListUrlState } from './hooks/use_episodes_list_url_state';
 import { useEpisodesBulkActions } from './hooks/use_episodes_bulk_actions';
 import { DEFAULT_EPISODES_LIST_FILTER } from './utils/episodes_list_url_state';
+import { getQueryFilterState } from './utils/episodes_query_filter';
 import { CLASSIC_EPISODES_DATA_SOURCE } from '../../episode_sources';
 import { ClassicAlertDetailsFlyout } from './components/classic_alert_details_flyout';
 import { getDiscoverHrefForRuleAndEpisodeTimestamp } from '../../utils/discover_href_for_episode';
@@ -197,6 +198,7 @@ const AlertEpisodesListPageContent = () => {
     () => !deepEqual(filterState, DEFAULT_EPISODES_LIST_FILTER),
     [filterState]
   );
+  const queryFilterState = useMemo(() => getQueryFilterState(filterState), [filterState]);
 
   const handleClearFilters = useCallback(() => {
     setFilterState({ ...DEFAULT_EPISODES_LIST_FILTER });
@@ -248,7 +250,7 @@ const AlertEpisodesListPageContent = () => {
   } = useFetchAlertingEpisodesQuery({
     pageSize: ALERT_EPISODES_LIST_PAGE_SIZE,
     services,
-    filterState,
+    filterState: queryFilterState,
     sortState,
     timeRange,
   });
@@ -598,13 +600,13 @@ const AlertEpisodesListPageContent = () => {
           />
         </EuiFlexItem>
         <EuiFlexItem grow={false}>
-          <EpisodesKpis services={services} filterState={filterState} timeRange={timeRange} />
+          <EpisodesKpis services={services} filterState={queryFilterState} timeRange={timeRange} />
         </EuiFlexItem>
         <EuiFlexItem grow={false}>
           <EpisodesHistogram
             services={services}
             dataView={dataView}
-            filterState={filterState}
+            filterState={queryFilterState}
             timeRange={timeRange}
             onTimeRangeChange={handleTimeChange}
             breakdownField={histogramBreakdownField}
